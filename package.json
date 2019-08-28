@@ -1,0 +1,17 @@
+{
+    "name": "webrtc-chat",
+    "version": "0.1.0",
+    "description": "A chat implementation using webrtc data channels",
+    "main": "index.js",
+    "author": "Even Alander <even@alander.org>",
+    "license": "UNLICENSED",
+    "private": true,
+    "dependencies": {},
+    "devDependencies": {
+        "parcel": "^1.12.3",
+        "typescript": "^3.6.2"
+    },
+    "scripts": {
+        "start": "parcel index.html"
+    }
+}
