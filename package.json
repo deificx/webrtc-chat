@@ -8,6 +8,7 @@
     "private": true,
     "dependencies": {
         "eventemitter3": "^4.0.0",
+        "node-turn": "^0.0.4",
         "webrtc-adapter": "^7.3.0"
     },
     "devDependencies": {
