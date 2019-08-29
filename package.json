@@ -6,12 +6,17 @@
     "author": "Even Alander <even@alander.org>",
     "license": "UNLICENSED",
     "private": true,
-    "dependencies": {},
+    "dependencies": {
+        "eventemitter3": "^4.0.0",
+        "webrtc-adapter": "^7.3.0"
+    },
     "devDependencies": {
         "parcel": "^1.12.3",
+        "ts-node-dev": "^1.0.0-pre.42",
         "typescript": "^3.6.2"
     },
     "scripts": {
+        "server": "ts-node-dev server.ts",
         "start": "parcel index.html"
     }
 }
