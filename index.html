@@ -3,8 +3,37 @@
 <html>
     <head>
         <title>webrtc data channel chat</title>
+        <style type="text/css">
+            body {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .container {
+                flex-grow: 1;
+            }
+
+            time {
+                color: lightgrey;
+                display: block;
+            }
+        </style>
     </head>
     <body>
+        <div id="local" class="container">
+            <h2>Local side</h2>
+            <div id="local-messages"></div>
+            <form id="local-form">
+                <input type="text" id="local-input" />
+            </form>
+        </div>
+        <div id="remote" class="container">
+            <h2>Remote side</h2>
+            <div id="remote-messages"></div>
+            <form id="remote-form">
+                <input type="text" id="remote-input" />
+            </form>
+        </div>
         <script src="/index.ts"></script>
     </body>
 </html>

@@ -6,22 +6,27 @@ const events = new EventEmitter();
 
 type Party = 'local' | 'remote';
 
-const dataChannel = (pc: RTCPeerConnection, side: Party, label: string) => {
-    var channel = pc.createDataChannel(label, {negotiated: true, id: 0});
+const messages = () => {
+    const messageList: string[] = [];
+    const subscribers: Array<(message: string) => void> = [];
 
-    channel.onopen = _event => {
-        channel.send(`Hi, I am ${side}!`);
+    return {
+        getMessages: () => Array.from(messageList),
+        push: (message: string) => {
+            messageList.push(message);
+            subscribers.forEach(sub => sub(message));
+        },
+        subscribe: (subscriberFn: (message: string) => void) => {
+            subscribers.push(subscriberFn);
+        },
     };
-
-    channel.onmessage = event => {
-        console.log(event.data);
-    };
-
-    console.log(side, channel);
 };
 
-const signaling = async (side: Party, remote: Party, sdp?: RTCSessionDescription) => {
-    console.log(side);
+const signaling = async (
+    side: Party,
+    remote: Party,
+    sdp?: RTCSessionDescription
+): Promise<[RTCDataChannel, () => string[], (subscriberFn: (message: string) => void) => void]> => {
     const pc = new RTCPeerConnection({
         iceServers: [
             {urls: [`stun:${window.location.hostname}:3478`]},
@@ -33,7 +38,6 @@ const signaling = async (side: Party, remote: Party, sdp?: RTCSessionDescription
             },
         ],
     });
-    console.log(pc);
 
     pc.onnegotiationneeded = async () => {
         console.log(`onnegotiationneeded triggered by ${side}`);
@@ -82,14 +86,65 @@ const signaling = async (side: Party, remote: Party, sdp?: RTCSessionDescription
         pc.addIceCandidate(candidate);
     });
 
-    dataChannel(pc, side, 'chat');
+    const {getMessages, push, subscribe} = messages();
 
-    return pc;
+    var channel = pc.createDataChannel('chat', {negotiated: true, id: 0});
+
+    channel.onopen = _event => {
+        channel.send(`Hi, I am a message from ${side}!`);
+    };
+
+    channel.onmessage = event => {
+        push(event.data);
+    };
+
+    return [channel, getMessages, subscribe];
+};
+
+const append = (el: HTMLElement | null, message: string) => {
+    if (!el) {
+        throw new Error('cannot append without an element');
+    }
+    const now = new Date();
+    const timeText = document.createTextNode(now.toLocaleString());
+    const time = document.createElement('time');
+    time.dateTime = now.toISOString();
+    time.appendChild(timeText);
+    const text = document.createTextNode(message);
+    const p = document.createElement('p');
+    p.appendChild(time);
+    p.appendChild(text);
+    el.appendChild(p);
 };
 
 (async () => {
     events.on('local-offer', async (sdp: RTCSessionDescription) => {
-        await signaling('remote', 'local', sdp);
+        const [remoteChannel, remoteGetMessages, remoteSubscribe] = await signaling('remote', 'local', sdp);
+        const remoteMessagesDiv = document.getElementById('remote-messages') as HTMLDivElement;
+        remoteSubscribe((message: string) => append(remoteMessagesDiv, message));
+        const remoteForm = document.getElementById('remote-form') as HTMLFormElement;
+        const remoteInput = document.getElementById('remote-input') as HTMLInputElement;
+        remoteForm.onsubmit = event => {
+            event.preventDefault();
+            if (!remoteInput.value) {
+                return;
+            }
+            remoteChannel.send(remoteInput.value);
+            remoteInput.value = '';
+        };
     });
-    await signaling('local', 'remote');
+
+    const [localChannel, localGetMessages, localSubscribe] = await signaling('local', 'remote');
+    const localMessagesDiv = document.getElementById('local-messages') as HTMLDivElement;
+    localSubscribe((message: string) => append(localMessagesDiv, message));
+    const localForm = document.getElementById('local-form') as HTMLFormElement;
+    const localInput = document.getElementById('local-input') as HTMLInputElement;
+    localForm.onsubmit = event => {
+        event.preventDefault();
+        if (!localInput.value) {
+            return;
+        }
+        localChannel.send(localInput.value);
+        localInput.value = '';
+    };
 })();
