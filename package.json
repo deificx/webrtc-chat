@@ -8,10 +8,17 @@
     "private": true,
     "dependencies": {
         "eventemitter3": "^4.0.0",
+        "immer": "^3.2.0",
         "node-turn": "^0.0.4",
-        "webrtc-adapter": "^7.3.0"
+        "redux": "^4.0.4",
+        "redux-saga": "^1.0.5",
+        "uuid": "^3.3.3",
+        "webrtc-adapter": "^7.3.0",
+        "ws": "^7.1.2"
     },
     "devDependencies": {
+        "@types/uuid": "^3.4.5",
+        "@types/ws": "^6.0.3",
         "parcel": "^1.12.3",
         "ts-node-dev": "^1.0.0-pre.42",
         "typescript": "^3.6.2"
