@@ -118,4 +118,4 @@ export type Actions =
     | SetClientServerId
     | SetRemoteDataChannel
     | SetRemotePeerConnection
-    | SetSignalingStable;
+    | SetSignalingState;
