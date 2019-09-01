@@ -12,12 +12,11 @@ import {
     announceMessage,
     sdpMessage,
     iceMessage,
+    createMessage,
 } from './types';
 import {
     Actions,
     ANNOUNCE,
-    NEW_CLIENT,
-    newClient,
     ON_ANNOUNCE,
     ON_OFFER,
     SET_CLIENT_SERVER_ID,
@@ -48,6 +47,9 @@ import {
     ON_ANSWER,
     sendIceCandidate,
     sendRenegotiation,
+    sendRTCMessage,
+    SetClientServerId,
+    SEND_RTC_MESSAGE,
 } from './actions';
 // import uuidv4 from 'uuid/v4';
 import {produce} from 'immer';
@@ -136,8 +138,10 @@ function* clientActions(socket: WebSocket) {
                 break;
 
             case ON_ANSWER: {
-                const pc = yield select(remotePC, action.from);
-                yield pc.setRemoteDescription(action.sdp);
+                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
+                if (pc) {
+                    yield pc.setRemoteDescription(action.sdp);
+                }
                 break;
             }
 
@@ -147,21 +151,32 @@ function* clientActions(socket: WebSocket) {
                 break;
 
             case ON_ICE_CANDIDATE: {
-                const pc = yield select(remotePC, action.from);
-                yield pc.addIceCandidate(action.candidate);
+                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
+                if (pc) {
+                    yield pc.addIceCandidate(action.candidate);
+                }
                 break;
             }
 
             case ON_RENEGOTIATION: {
                 // setRemote, answer
-                const pc = yield select(remotePC, action.from);
-                yield pc.setRemoteDescription(action.sdp);
-                yield pc.setLocalDescription(yield pc.createAnswer());
-                if (!pc.localDescription) {
-                    throw new Error('failed to setup local description');
+                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
+                if (pc) {
+                    yield pc.setRemoteDescription(action.sdp);
+                    yield pc.setLocalDescription(yield pc.createAnswer());
+                    if (!pc.localDescription) {
+                        throw new Error('failed to setup local description');
+                    }
+                    const from: string = yield select(clientId);
+                    yield put(
+                        sendAnswer({
+                            from,
+                            to: action.from,
+                            sdp: pc.localDescription,
+                            key: 'answer',
+                        })
+                    );
                 }
-                const from: string = yield select(clientId);
-                yield put(sendAnswer({from, to: action.from, sdp: pc.localDescription, key: 'answer'}));
                 break;
             }
 
@@ -174,6 +189,12 @@ function* clientActions(socket: WebSocket) {
             case SEND_ICE_CANDIDATE:
                 socket.send(iceMessage(action));
                 break;
+
+            case SEND_RTC_MESSAGE: {
+                const openChannels: RTCDataChannel[] = yield select(channels);
+                openChannels.forEach(channel => channel.send(JSON.stringify(action.message)));
+                break;
+            }
         }
     }
 }
@@ -227,7 +248,14 @@ function* pcEvents(remoteId: string, pc: RTCPeerConnection) {
             case 'pc:ice-candidate':
                 if (event.candidate) {
                     const from: string = yield select(clientId);
-                    yield put(sendIceCandidate({from, to: remoteId, candidate: event.candidate, key: 'ice-candidate'}));
+                    yield put(
+                        sendIceCandidate({
+                            from,
+                            to: remoteId,
+                            candidate: event.candidate,
+                            key: 'ice-candidate',
+                        })
+                    );
                 }
                 break;
 
@@ -237,7 +265,14 @@ function* pcEvents(remoteId: string, pc: RTCPeerConnection) {
                 if (!pc.localDescription) {
                     throw new Error('failed to setup local description');
                 }
-                yield put(sendRenegotiation({from, to: remoteId, sdp: pc.localDescription, key: 'renegotiate'}));
+                yield put(
+                    sendRenegotiation({
+                        from,
+                        to: remoteId,
+                        sdp: pc.localDescription,
+                        key: 'renegotiate',
+                    })
+                );
                 break;
             }
 
@@ -315,7 +350,14 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
         if (!pc.localDescription) {
             throw new Error('failed to setup local description');
         }
-        yield put(sendAnswer({from, to: remoteId, sdp: pc.localDescription, key: 'answer'}));
+        yield put(
+            sendAnswer({
+                from,
+                to: remoteId,
+                sdp: pc.localDescription,
+                key: 'answer',
+            })
+        );
     } else {
         yield pc.setLocalDescription(yield pc.createOffer());
         if (!pc.localDescription) {
@@ -325,11 +367,6 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
     }
 
     yield put(newRTCDataChannel(remoteId));
-}
-
-function* saga() {
-    yield takeEvery(NEW_CLIENT, client);
-    yield takeEvery(NEW_RTC_PEER_CONNECTION, pc);
 }
 
 interface Remote {
@@ -358,7 +395,10 @@ const reducer = (state: State = defaultState, action: Actions) =>
 
             case SET_REMOTE_DATA_CHANNEL:
                 if (Object.hasOwnProperty.call(draft.remotes, action.remoteId)) {
-                    draft.remotes[action.remoteId] = {...draft.remotes[action.remoteId], channel: action.channel};
+                    draft.remotes[action.remoteId] = {
+                        ...draft.remotes[action.remoteId],
+                        channel: action.channel,
+                    };
                 }
                 break;
 
@@ -382,28 +422,29 @@ const channels = (state: State) => {
     }
     return list;
 };
+const messages = (state: State) => state.messages;
 
-const sagaMiddleware = createSagaMiddleware();
-const store = createStore(reducer, applyMiddleware(sagaMiddleware));
-sagaMiddleware.run(saga);
-
-const append = (div: HTMLDivElement | null, message: string) => {
+const append = (div: HTMLDivElement | null, message: RTCChatMessage) => {
     if (!div) {
         throw new Error('cannot append without a container div');
     }
-    const now = new Date();
-    const timeText = document.createTextNode(now.toLocaleString());
+    const timestamp = new Date(message.timestamp);
+    const timeText = document.createTextNode(timestamp.toLocaleString());
     const time = document.createElement('time');
-    time.dateTime = now.toISOString();
+    time.dateTime = timestamp.toISOString();
     time.appendChild(timeText);
-    const text = document.createTextNode(message);
+    const text = document.createTextNode(message.message);
     const p = document.createElement('p');
     p.appendChild(time);
     p.appendChild(text);
     div.appendChild(p);
 };
 
-const control = (form: HTMLFormElement | null, input: HTMLInputElement | null, channel: RTCDataChannel) => {
+const control = (
+    form: HTMLFormElement | null,
+    input: HTMLInputElement | null,
+    send: (message: RTCChatMessage) => void
+) => {
     if (!form || !input) {
         throw new Error('cannot get form');
     }
@@ -412,7 +453,7 @@ const control = (form: HTMLFormElement | null, input: HTMLInputElement | null, c
         if (!input.value) {
             return;
         }
-        channel.send(input.value);
+        send(createMessage(input.value));
         input.value = '';
     };
 };
@@ -420,8 +461,8 @@ const control = (form: HTMLFormElement | null, input: HTMLInputElement | null, c
 const template = document.querySelector('#container') as HTMLTemplateElement;
 const copyTemplate = (
     id: string,
-    channel: RTCDataChannel,
-    subscribe: (subscriberFn: (message: string) => void) => void
+    send: (message: RTCChatMessage) => void,
+    subscribe: (subscriberFn: (message: RTCChatMessage) => void) => void
 ) => {
     const container = document.importNode(template.content, true);
     const header = container.querySelector('.title') as HTMLHeadingElement;
@@ -429,11 +470,45 @@ const copyTemplate = (
     const form = container.querySelector('form') as HTMLFormElement;
     const input = container.querySelector('input') as HTMLInputElement;
     header.innerText = id;
-    control(form, input, channel);
-    subscribe((message: string) => {
+    control(form, input, send);
+    subscribe((message: RTCChatMessage) => {
         append(messages, message);
     });
     document.body.appendChild(container);
 };
 
-store.dispatch(newClient());
+const clientFactory = () => {
+    const sagaMiddleware = createSagaMiddleware();
+    const store = createStore(reducer, applyMiddleware(sagaMiddleware));
+
+    const send = (message: RTCChatMessage) => {
+        store.dispatch(sendRTCMessage(message));
+    };
+
+    const subscribe = (subscriberFn: (message: RTCChatMessage) => void) => {
+        let messageList: RTCChatMessage[] = [];
+        store.subscribe(() => {
+            const newMessages = messages(store.getState());
+            const difference = messageList.filter(x => !newMessages.includes(x));
+            messageList = newMessages;
+            difference.forEach(subscriberFn);
+        });
+    };
+
+    function* saga() {
+        yield takeEvery(NEW_RTC_PEER_CONNECTION, pc);
+        yield fork(client);
+        const {id}: SetClientServerId = yield take(SET_CLIENT_SERVER_ID);
+        yield call(copyTemplate, id, send, subscribe);
+    }
+
+    sagaMiddleware.run(saga);
+};
+
+const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+
+(async () => {
+    clientFactory();
+    await wait(2000);
+    clientFactory();
+})();

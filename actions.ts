@@ -1,14 +1,9 @@
-import {AnnounceClient, Sdp, IceCandidate} from './types';
+import {AnnounceClient, Sdp, IceCandidate, RTCChatMessage} from './types';
 
 type ANNOUNCE = 'ANNOUNCE';
 export const ANNOUNCE: ANNOUNCE = 'ANNOUNCE';
 export const announce = (id: string) => ({id, type: ANNOUNCE});
 export type Announce = ReturnType<typeof announce>;
-
-type NEW_CLIENT = 'NEW_CLIENT';
-export const NEW_CLIENT: NEW_CLIENT = 'NEW_CLIENT';
-export const newClient = () => ({type: NEW_CLIENT});
-export type NewClient = ReturnType<typeof newClient>;
 
 type NEW_RTC_DATA_CHANNEL = 'NEW_RTC_DATA_CHANNEL';
 export const NEW_RTC_DATA_CHANNEL: NEW_RTC_DATA_CHANNEL = 'NEW_RTC_DATA_CHANNEL';
@@ -69,6 +64,11 @@ export const SEND_RENEGOTIATION: SEND_RENEGOTIATION = 'SEND_RENEGOTIATION';
 export const sendRenegotiation = (offer: Sdp) => ({...offer, type: SEND_RENEGOTIATION});
 export type SendRenegotiation = ReturnType<typeof sendRenegotiation>;
 
+type SEND_RTC_MESSAGE = 'SEND_MESSAGE';
+export const SEND_RTC_MESSAGE: SEND_RTC_MESSAGE = 'SEND_MESSAGE';
+export const sendRTCMessage = (message: RTCChatMessage) => ({message, type: SEND_RTC_MESSAGE});
+export type SendRTCMessageAction = ReturnType<typeof sendRTCMessage>;
+
 type SET_CLIENT_SERVER_ID = 'SET_CLIENT_SERVER_ID';
 export const SET_CLIENT_SERVER_ID: SET_CLIENT_SERVER_ID = 'SET_CLIENT_SERVER_ID';
 export const setClientServerId = (id: string) => ({id, type: SET_CLIENT_SERVER_ID});
@@ -94,7 +94,6 @@ export type SetRemotePeerConnection = ReturnType<typeof setRemotePeerConnection>
 
 export type Actions =
     | Announce
-    | NewClient
     | NewRTCDataChannel
     | NewRTCPeerConnection
     | OnAnnounce
@@ -106,6 +105,7 @@ export type Actions =
     | SendIceCandidate
     | SendOffer
     | SendRenegotiation
+    | SendRTCMessageAction
     | SetClientServerId
     | SetRemoteDataChannel
     | SetRemotePeerConnection;

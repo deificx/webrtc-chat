@@ -29,8 +29,8 @@ export interface RTCEvent {
 
 export interface RTCChatMessage {
     message: string;
+    key: 'rtc:chat';
     timestamp: number;
-    type: 'rtc:chat';
 }
 
 export const sdpMessage = ({from, to, sdp, key}: Sdp): string =>
@@ -54,3 +54,9 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         from,
         key,
     });
+
+export const createMessage = (message: string): RTCChatMessage => ({
+    message,
+    timestamp: Date.now(),
+    key: 'rtc:chat',
+});
