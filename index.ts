@@ -7,12 +7,14 @@ import {
     Sdp,
     Id,
     IceCandidate,
-    RTCEvent,
+    PCEvent,
     RTCChatMessage,
     announceMessage,
     sdpMessage,
     iceMessage,
     createMessage,
+    PCCandidateEvent,
+    PCDataChannelEvent,
 } from './types';
 import {
     Actions,
@@ -39,10 +41,8 @@ import {
     SEND_RENEGOTIATION,
     SEND_ICE_CANDIDATE,
     ON_ICE_CANDIDATE,
-    NEW_RTC_DATA_CHANNEL,
     setRemoteDataChannel,
     SET_REMOTE_DATA_CHANNEL,
-    newRTCDataChannel,
     announce,
     ON_ANSWER,
     sendIceCandidate,
@@ -50,6 +50,10 @@ import {
     sendRTCMessage,
     SetClientServerId,
     SEND_RTC_MESSAGE,
+    SetRemotePeerConnection,
+    SET_SIGNALING_STATE,
+    setSignalingState,
+    SetRemoteDataChannel,
 } from './actions';
 // import uuidv4 from 'uuid/v4';
 import {produce} from 'immer';
@@ -109,6 +113,28 @@ function* clientEvents(socket: WebSocket) {
     }
 }
 
+function* getReadyPeerConnection(remoteId: string, expectedState: RTCSignalingState | null) {
+    let pc: RTCPeerConnection | null = yield select(remotePC, remoteId);
+    if (!pc) {
+        console.log('no peer connection exist yet, awaiting peer connection');
+        const action: SetRemotePeerConnection = yield take(
+            (action: any) => action.type === SET_REMOTE_PEER_CONNECTION && action.remoteId === remoteId
+        );
+        pc = action.pc;
+    }
+
+    console.log(`signalingState="${pc.signalingState}", expectedState="${expectedState}"`);
+    if (expectedState && pc.signalingState !== expectedState) {
+        console.warn('incorrect signaling state');
+        yield take(
+            (action: any) =>
+                action.type === SET_SIGNALING_STATE && action.remoteId === remoteId && action.state === expectedState
+        );
+    }
+
+    return pc;
+}
+
 function* clientActions(socket: WebSocket) {
     const actions: Channel<Actions> = yield actionChannel([
         ANNOUNCE,
@@ -120,6 +146,7 @@ function* clientActions(socket: WebSocket) {
         SEND_OFFER,
         SEND_RENEGOTIATION,
         SEND_ICE_CANDIDATE,
+        SEND_RTC_MESSAGE,
     ]);
 
     while (true) {
@@ -129,7 +156,7 @@ function* clientActions(socket: WebSocket) {
 
         switch (action.type) {
             case ANNOUNCE:
-                yield call([socket, socket.send], announceMessage({from: action.id, key: 'announce'}));
+                socket.send(announceMessage({from: action.id, key: 'announce'}));
                 break;
 
             case ON_ANNOUNCE:
@@ -138,10 +165,9 @@ function* clientActions(socket: WebSocket) {
                 break;
 
             case ON_ANSWER: {
-                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
-                if (pc) {
-                    yield pc.setRemoteDescription(action.sdp);
-                }
+                const pc: RTCPeerConnection = yield call(getReadyPeerConnection, action.from, 'have-local-offer');
+                const sessionDescription = new RTCSessionDescription(action.sdp);
+                yield pc.setRemoteDescription(sessionDescription);
                 break;
             }
 
@@ -151,32 +177,29 @@ function* clientActions(socket: WebSocket) {
                 break;
 
             case ON_ICE_CANDIDATE: {
-                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
-                if (pc) {
-                    yield pc.addIceCandidate(action.candidate);
-                }
+                const pc: RTCPeerConnection = yield call(getReadyPeerConnection, action.from, null);
+                yield pc.addIceCandidate(action.candidate);
                 break;
             }
 
             case ON_RENEGOTIATION: {
                 // setRemote, answer
-                const pc: RTCPeerConnection | null = yield select(remotePC, action.from);
-                if (pc) {
-                    yield pc.setRemoteDescription(action.sdp);
-                    yield pc.setLocalDescription(yield pc.createAnswer());
-                    if (!pc.localDescription) {
-                        throw new Error('failed to setup local description');
-                    }
-                    const from: string = yield select(clientId);
-                    yield put(
-                        sendAnswer({
-                            from,
-                            to: action.from,
-                            sdp: pc.localDescription,
-                            key: 'answer',
-                        })
-                    );
+                const pc: RTCPeerConnection = yield call(getReadyPeerConnection, action.from, 'stable');
+                const sessionDescription = new RTCSessionDescription(action.sdp);
+                yield pc.setRemoteDescription(sessionDescription);
+                yield pc.setLocalDescription(yield pc.createAnswer());
+                if (!pc.localDescription) {
+                    throw new Error('failed to setup local description');
                 }
+                const from: string = yield select(clientId);
+                yield put(
+                    sendAnswer({
+                        from,
+                        to: action.from,
+                        sdp: pc.localDescription,
+                        key: 'answer',
+                    })
+                );
                 break;
             }
 
@@ -207,9 +230,13 @@ function* client() {
 }
 
 const getPCEvents = (pc: RTCPeerConnection) =>
-    eventChannel<RTCEvent>(subscribe => {
+    eventChannel<PCEvent | PCCandidateEvent | PCDataChannelEvent>(subscribe => {
         pc.onconnectionstatechange = _ => {
             subscribe({type: 'pc:connectionstatechange'});
+        };
+
+        pc.ondatachannel = event => {
+            subscribe({channel: event.channel, type: 'pc:datachannel'});
         };
 
         pc.onicecandidate = event => {
@@ -236,7 +263,7 @@ function* pcEvents(remoteId: string, pc: RTCPeerConnection) {
     const events = getPCEvents(pc);
 
     while (true) {
-        const event: RTCEvent = yield take(events);
+        const event: PCEvent | PCCandidateEvent | PCDataChannelEvent = yield take(events);
 
         console.log('pc-event', event);
 
@@ -245,7 +272,12 @@ function* pcEvents(remoteId: string, pc: RTCPeerConnection) {
                 console.log(`connectionstatechange, remoteId="${remoteId}", state="${pc.connectionState}"`);
                 break;
 
+            case 'pc:datachannel':
+                yield put(setRemoteDataChannel(remoteId, event.channel));
+                break;
+
             case 'pc:ice-candidate':
+                console.log(`ice-candidate, remoteId="${remoteId}", hasCandidate="${Boolean(event.candidate)}"`);
                 if (event.candidate) {
                     const from: string = yield select(clientId);
                     yield put(
@@ -278,6 +310,7 @@ function* pcEvents(remoteId: string, pc: RTCPeerConnection) {
 
             case 'pc:signalingstatechange':
                 console.log(`signalingstatechange, remoteId="${remoteId}, state=${pc.signalingState}"`);
+                yield put(setSignalingState(remoteId, pc.signalingState));
                 break;
         }
     }
@@ -300,14 +333,8 @@ const channelEvents = (channel: RTCDataChannel) =>
         };
     });
 
-function* pcActions(remoteId: string, pc: RTCPeerConnection) {
-    yield take((action: Actions) => action.type === NEW_RTC_DATA_CHANNEL && action.remoteId === remoteId);
-
-    console.log(`taking new rtc data channel, remoteId="${remoteId}"`);
-
-    const channel = pc.createDataChannel('chat', {negotiated: true, id: 0});
-
-    yield put(setRemoteDataChannel(remoteId, channel));
+function* pcActions({channel, remoteId}: SetRemoteDataChannel) {
+    console.log(`new data channel triggered, remoteId="${remoteId}"`);
 
     channel.onopen = _event => {
         console.log('RTCDataChannel opened', remoteId);
@@ -337,7 +364,6 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
     });
 
     yield fork(pcEvents, remoteId, pc);
-    yield fork(pcActions, remoteId, pc);
     yield put(setRemotePeerConnection(remoteId, pc));
 
     const from: string = yield select(clientId);
@@ -345,7 +371,8 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
     console.log(`creating local description from="${from}", hasSDP=${Boolean(sdp)}`);
 
     if (sdp) {
-        yield pc.setRemoteDescription(sdp);
+        const sessionDescription = new RTCSessionDescription(sdp);
+        yield pc.setRemoteDescription(sessionDescription);
         yield pc.setLocalDescription(yield pc.createAnswer());
         if (!pc.localDescription) {
             throw new Error('failed to setup local description');
@@ -364,9 +391,10 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
             throw new Error('failed to setup local description');
         }
         yield put(sendOffer({from, to: remoteId, sdp: pc.localDescription, key: 'offer'}));
+        yield take((action: Actions) => action.type === ON_ANSWER && action.from === remoteId);
+        const channel = pc.createDataChannel('chat');
+        yield put(setRemoteDataChannel(remoteId, channel));
     }
-
-    yield put(newRTCDataChannel(remoteId));
 }
 
 interface Remote {
@@ -481,11 +509,11 @@ const clientFactory = () => {
     const sagaMiddleware = createSagaMiddleware();
     const store = createStore(reducer, applyMiddleware(sagaMiddleware));
 
-    const send = (message: RTCChatMessage) => {
+    function send(message: RTCChatMessage) {
         store.dispatch(sendRTCMessage(message));
-    };
+    }
 
-    const subscribe = (subscriberFn: (message: RTCChatMessage) => void) => {
+    function subscribe(subscriberFn: (message: RTCChatMessage) => void) {
         let messageList: RTCChatMessage[] = [];
         store.subscribe(() => {
             const newMessages = messages(store.getState());
@@ -493,10 +521,11 @@ const clientFactory = () => {
             messageList = newMessages;
             difference.forEach(subscriberFn);
         });
-    };
+    }
 
     function* saga() {
         yield takeEvery(NEW_RTC_PEER_CONNECTION, pc);
+        yield takeEvery(SET_REMOTE_DATA_CHANNEL, pcActions);
         yield fork(client);
         const {id}: SetClientServerId = yield take(SET_CLIENT_SERVER_ID);
         yield call(copyTemplate, id, send, subscribe);

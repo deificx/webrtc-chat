@@ -38,8 +38,11 @@ websocketServer.on('connection', socket => {
     socket.onmessage = event => {
         try {
             const message: AnnounceClient | Sdp | IceCandidate = JSON.parse(event.data.toString());
-            console.log('socket message');
-            console.log(JSON.stringify(message, null, 2));
+            console.log(
+                `socket message, key="${message.key}", from="${message.from}"${
+                    (message as any).to ? `, to="${(message as any).to}"` : ''
+                }`
+            );
 
             switch (message.key) {
                 case 'announce':

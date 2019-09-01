@@ -22,9 +22,18 @@ export interface Id {
     key: 'id';
 }
 
-export interface RTCEvent {
-    candidate?: RTCIceCandidate | null;
-    type: 'pc:connectionstatechange' | 'pc:ice-candidate' | 'pc:negotiationneeded' | 'pc:signalingstatechange';
+export interface PCEvent {
+    type: 'pc:connectionstatechange' | 'pc:negotiationneeded' | 'pc:signalingstatechange';
+}
+
+export interface PCCandidateEvent {
+    candidate: RTCIceCandidate | null;
+    type: 'pc:ice-candidate';
+}
+
+export interface PCDataChannelEvent {
+    channel: RTCDataChannel;
+    type: 'pc:datachannel';
 }
 
 export interface RTCChatMessage {

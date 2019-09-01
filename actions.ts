@@ -64,8 +64,8 @@ export const SEND_RENEGOTIATION: SEND_RENEGOTIATION = 'SEND_RENEGOTIATION';
 export const sendRenegotiation = (offer: Sdp) => ({...offer, type: SEND_RENEGOTIATION});
 export type SendRenegotiation = ReturnType<typeof sendRenegotiation>;
 
-type SEND_RTC_MESSAGE = 'SEND_MESSAGE';
-export const SEND_RTC_MESSAGE: SEND_RTC_MESSAGE = 'SEND_MESSAGE';
+type SEND_RTC_MESSAGE = 'SEND_RTC_MESSAGE';
+export const SEND_RTC_MESSAGE: SEND_RTC_MESSAGE = 'SEND_RTC_MESSAGE';
 export const sendRTCMessage = (message: RTCChatMessage) => ({message, type: SEND_RTC_MESSAGE});
 export type SendRTCMessageAction = ReturnType<typeof sendRTCMessage>;
 
@@ -92,6 +92,15 @@ export const setRemotePeerConnection = (remoteId: string, pc: RTCPeerConnection)
 });
 export type SetRemotePeerConnection = ReturnType<typeof setRemotePeerConnection>;
 
+type SET_SIGNALING_STATE = 'SET_SIGNALING_STATE';
+export const SET_SIGNALING_STATE: SET_SIGNALING_STATE = 'SET_SIGNALING_STATE';
+export const setSignalingState = (remoteId: string, state: RTCSignalingState) => ({
+    remoteId,
+    state,
+    type: SET_SIGNALING_STATE,
+});
+export type SetSignalingState = ReturnType<typeof setSignalingState>;
+
 export type Actions =
     | Announce
     | NewRTCDataChannel
@@ -108,4 +117,5 @@ export type Actions =
     | SendRTCMessageAction
     | SetClientServerId
     | SetRemoteDataChannel
-    | SetRemotePeerConnection;
+    | SetRemotePeerConnection
+    | SetSignalingStable;
