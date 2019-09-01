@@ -54,6 +54,7 @@ import {
     SET_SIGNALING_STATE,
     setSignalingState,
     SetRemoteDataChannel,
+    OnAnswer,
 } from './actions';
 // import uuidv4 from 'uuid/v4';
 import {produce} from 'immer';
@@ -391,7 +392,7 @@ function* pc({remoteId, sdp}: NewRTCPeerConnection) {
             throw new Error('failed to setup local description');
         }
         yield put(sendOffer({from, to: remoteId, sdp: pc.localDescription, key: 'offer'}));
-        yield take((action: Actions) => action.type === ON_ANSWER && action.from === remoteId);
+        yield take<any>((action: OnAnswer) => action.type === ON_ANSWER && action.from === remoteId);
         const channel = pc.createDataChannel('chat');
         yield put(setRemoteDataChannel(remoteId, channel));
     }
