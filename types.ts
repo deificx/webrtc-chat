@@ -22,6 +22,8 @@ export interface Id {
     key: 'id';
 }
 
+export type WebSocketMessage = Sdp | IceCandidate | AnnounceClient | Id;
+
 export interface PCEvent {
     type: 'pc:connectionstatechange' | 'pc:negotiationneeded' | 'pc:signalingstatechange';
 }
