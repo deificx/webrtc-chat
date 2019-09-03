@@ -239,12 +239,8 @@ const generateKeys = async () =>
         ['sign', 'verify']
     );
 
-const encode = (message: RTCChatMessage) => {
-    const copy = {...message};
-    delete copy.signature;
-    const encoder = new TextEncoder();
-    return encoder.encode(JSON.stringify(copy));
-};
+const encode = (message: RTCChatMessage) =>
+    new TextEncoder().encode(`${message.id}:${message.timestamp}:${message.message}`);
 
 const signMessage = async (privateKey: CryptoKey, message: RTCChatMessage) => {
     const signature = await window.crypto.subtle.sign(

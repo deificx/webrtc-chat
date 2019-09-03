@@ -74,7 +74,7 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
     });
 
 const generateID = (segments = 3): string => {
-    const array = new Uint32Array(3);
+    const array = new Uint32Array(segments);
     window.crypto.getRandomValues(array);
     return array.join('-');
 };
