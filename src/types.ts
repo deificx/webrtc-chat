@@ -1,3 +1,5 @@
+import {generateID} from './crypto';
+
 export interface Sdp {
     from: string;
     sdp: RTCSessionDescription;
@@ -72,12 +74,6 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         from,
         key,
     });
-
-const generateID = (segments = 3): string => {
-    const array = new Uint32Array(segments);
-    window.crypto.getRandomValues(array);
-    return array.join('-');
-};
 
 export const createMessage = (message: string): RTCChatMessage => ({
     id: generateID(),
