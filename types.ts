@@ -39,9 +39,16 @@ export interface PCDataChannelEvent {
 }
 
 export interface RTCChatMessage {
-    message: string;
+    id: string;
     key: 'rtc:chat';
+    message: string;
+    signature?: string;
     timestamp: number;
+}
+
+export interface RTCKeyMessage {
+    key: 'rtc:public-key';
+    exportedPublicKey: JsonWebKey;
 }
 
 export const sdpMessage = ({from, to, sdp, key}: Sdp): string =>
@@ -66,8 +73,21 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         key,
     });
 
+const generateID = (segments = 3): string => {
+    const array = new Uint32Array(3);
+    window.crypto.getRandomValues(array);
+    return array.join('-');
+};
+
 export const createMessage = (message: string): RTCChatMessage => ({
+    id: generateID(),
     message,
     timestamp: Date.now(),
     key: 'rtc:chat',
 });
+
+export const publicKeyMessage = async (publicKey: CryptoKey): Promise<string> =>
+    JSON.stringify({
+        key: 'rtc:public-key',
+        exportedPublicKey: await crypto.subtle.exportKey('jwk', publicKey),
+    });

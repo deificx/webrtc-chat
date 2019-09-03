@@ -1,5 +1,14 @@
 import 'webrtc-adapter';
-import {WebSocketMessage, sdpMessage, announceMessage, iceMessage, RTCChatMessage, createMessage} from './types';
+import {
+    WebSocketMessage,
+    sdpMessage,
+    announceMessage,
+    iceMessage,
+    RTCChatMessage,
+    createMessage,
+    publicKeyMessage,
+    RTCKeyMessage,
+} from './types';
 
 interface Actions {
     createPC: (to: string, sdp?: RTCSessionDescription) => Promise<RTCPeerConnection>;
@@ -37,19 +46,43 @@ const socket = async () => {
     };
 
     const from = await getID(ws);
-    const connections: {[key: string]: {channel?: RTCDataChannel; pc: RTCPeerConnection}} = {};
+    const connections: {[key: string]: {channel?: RTCDataChannel; pc: RTCPeerConnection; publicKey?: CryptoKey}} = {};
     const messages = new Messages();
+    const keyPair = await generateKeys();
 
-    const channelEvents = (channel: RTCDataChannel) => {
-        channel.onopen = () => {
-            console.log('channel opened');
-            channel.send(JSON.stringify(createMessage(from)));
+    const channelEvents = (channel: RTCDataChannel, to: string) => {
+        channel.onopen = async () => {
+            channel.send(await publicKeyMessage(keyPair.publicKey));
         };
 
-        channel.onmessage = event => {
+        channel.onmessage = async event => {
             try {
-                const message: RTCChatMessage = JSON.parse(event.data);
-                messages.push(message);
+                const message: RTCChatMessage | RTCKeyMessage = JSON.parse(event.data);
+                switch (message.key) {
+                    case 'rtc:chat': {
+                        messages.push(message);
+                        const {publicKey} = connections[to];
+                        if (publicKey) {
+                            console.log(message, await verifyMessage(publicKey, message));
+                        }
+                        break;
+                    }
+
+                    case 'rtc:public-key': {
+                        const publicKey = await crypto.subtle.importKey(
+                            'jwk',
+                            message.exportedPublicKey,
+                            {
+                                name: 'ECDSA',
+                                namedCurve: 'P-384',
+                            },
+                            true,
+                            ['verify']
+                        );
+                        connections[to].publicKey = publicKey;
+                        break;
+                    }
+                }
             } catch (error) {
                 console.error('failed to parse chat message');
                 console.error(error);
@@ -73,7 +106,7 @@ const socket = async () => {
 
             pc.ondatachannel = event => {
                 connections[to].channel = event.channel;
-                channelEvents(event.channel);
+                channelEvents(event.channel, to);
             };
 
             pc.onicecandidate = event => {
@@ -100,7 +133,7 @@ const socket = async () => {
                 actions.onSignalingState(to, 'stable', () => {
                     const channel = pc.createDataChannel('chat');
                     connections[to].channel = channel;
-                    channelEvents(channel);
+                    channelEvents(channel, to);
                 });
             }
 
@@ -143,13 +176,14 @@ const socket = async () => {
         sendIceCandidate: (to, candidate) => {
             ws.send(iceMessage({from, to, candidate, key: 'ice-candidate'}));
         },
-        sendMessage: message => {
-            messages.push(message);
+        sendMessage: async message => {
+            const signedMessage = await signMessage(keyPair.privateKey, message);
+            messages.push(signedMessage);
             for (const to in connections) {
                 if (Object.hasOwnProperty.call(connections, to)) {
                     const {channel} = connections[to];
                     if (channel) {
-                        channel.send(JSON.stringify(message));
+                        channel.send(JSON.stringify(signedMessage));
                     }
                 }
             }
@@ -194,6 +228,61 @@ const getID = (ws: WebSocket): Promise<string> =>
             }
         };
     });
+
+const generateKeys = async () =>
+    await window.crypto.subtle.generateKey(
+        {
+            name: 'ECDSA',
+            namedCurve: 'P-384',
+        },
+        true,
+        ['sign', 'verify']
+    );
+
+const encode = (message: RTCChatMessage) => {
+    const copy = {...message};
+    delete copy.signature;
+    const encoder = new TextEncoder();
+    return encoder.encode(JSON.stringify(copy));
+};
+
+const signMessage = async (privateKey: CryptoKey, message: RTCChatMessage) => {
+    const signature = await window.crypto.subtle.sign(
+        {
+            name: 'ECDSA',
+            hash: {name: 'SHA-384'},
+        },
+        privateKey,
+        encode(message)
+    );
+    return {...message, signature: ab2str(signature)};
+};
+
+const verifyMessage = async (publicKey: CryptoKey, message: RTCChatMessage) => {
+    if (!message.signature) {
+        return false;
+    }
+    return await window.crypto.subtle.verify(
+        {
+            name: 'ECDSA',
+            hash: {name: 'SHA-384'},
+        },
+        publicKey,
+        str2ab(message.signature),
+        encode(message)
+    );
+};
+
+// copied from https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
+const ab2str = (buf: ArrayBuffer) => String.fromCharCode.apply(null, Array.from(new Uint16Array(buf)));
+const str2ab = (str: string) => {
+    var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+    var bufView = new Uint16Array(buf);
+    for (var i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i);
+    }
+    return buf;
+};
 
 class MessageRouter {
     private buffers: {[key: string]: WebSocketMessage[]} = {};
