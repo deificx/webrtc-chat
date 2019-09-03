@@ -15,7 +15,7 @@ import {
     createMessage,
     PCCandidateEvent,
     PCDataChannelEvent,
-} from './types';
+} from '../src/types';
 import {
     Actions,
     ANNOUNCE,

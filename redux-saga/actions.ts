@@ -1,4 +1,4 @@
-import {AnnounceClient, Sdp, IceCandidate, RTCChatMessage} from './types';
+import {AnnounceClient, Sdp, IceCandidate, RTCChatMessage} from '../src/types';
 
 type ANNOUNCE = 'ANNOUNCE';
 export const ANNOUNCE: ANNOUNCE = 'ANNOUNCE';

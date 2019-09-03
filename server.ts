@@ -1,7 +1,7 @@
 import TurnServer from 'node-turn';
 import WebSocket from 'ws';
 import uuidv4 from 'uuid/v4';
-import {Sdp, AnnounceClient, IceCandidate} from './types';
+import {Sdp, AnnounceClient, IceCandidate} from './src/types';
 
 const turnServer = new TurnServer({
     listeningIps: ['0.0.0.0'],
