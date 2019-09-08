@@ -13,7 +13,7 @@ export const MessageInput: React.FC = () => {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        signaling.sendMessage(createMessage(author.id, value));
+        signaling.sendMessage(createMessage(author, value));
         setValue('');
     };
 

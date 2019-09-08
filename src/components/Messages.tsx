@@ -4,13 +4,14 @@ import {RTCChatMessage, Author, RTCKeyMessage} from '../types';
 import produce from 'immer';
 import {EditMessage} from './EditMessage';
 import {User} from './Login';
+import {MessageInput} from './MessageInput';
 
 interface State {
     authors: Author[];
     editing: string;
     messages: RTCChatMessage[];
 }
-type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string};
+type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string} | {key: 'clear:author'; id: string};
 
 const initialState: State = {
     authors: [],
@@ -22,6 +23,13 @@ const reducer = (state: State, action: Actions) =>
     produce(state, draft => {
         console.log(action);
         switch (action.key) {
+            case 'clear:author':
+                const index = draft.authors.findIndex(author => author.id === action.id);
+                if (index >= 0 && index < draft.authors.length) {
+                    draft.authors = [...draft.authors.slice(0, index), ...draft.authors.slice(index + 1)];
+                }
+                break;
+
             case 'edit':
                 draft.editing = action.id;
                 break;
@@ -53,7 +61,7 @@ export const Messages: React.FC = () => {
     }, []);
 
     const handleEdit = (id: string) => {
-        if (state.messages.some(m => m.id === id && m.authorId === author.id)) {
+        if (state.messages.some(m => m.id === id && m.author.id === author.id)) {
             dispatch({key: 'edit', id});
         }
     };
@@ -63,28 +71,36 @@ export const Messages: React.FC = () => {
     };
 
     return (
-        <div>
-            {state.messages.map(message => {
-                const time = new Date(message.timestamp);
-                const author = state.authors.find(a => a.id === message.authorId);
-                if (!author) {
-                    console.error('cannot list message without author');
-                    return null;
-                }
-                return (
-                    <article key={message.id}>
-                        <header>
-                            {author.displayName}
-                            <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
-                        </header>
-                        {state.editing === message.id ? (
-                            <EditMessage message={message} onEdited={finishEdit} />
-                        ) : (
-                            <section onDoubleClick={() => handleEdit(message.id)}>{message.message}</section>
-                        )}
-                    </article>
-                );
-            })}
-        </div>
+        <>
+            <div className="container">
+                <h2>Participants</h2>
+                <ul>
+                    {state.authors.map(a => (
+                        <li key={a.id}>{a.displayName}</li>
+                    ))}
+                </ul>
+            </div>
+            <div className="container">
+                <h2>Chat</h2>
+                {state.messages.map(message => {
+                    const time = new Date(message.timestamp);
+                    const author = state.authors.find(a => a.id === message.author.id);
+                    return (
+                        <article key={message.id}>
+                            <header>
+                                {author ? author.displayName : <del>{message.author.displayName}</del>}
+                                <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
+                            </header>
+                            {state.editing === message.id ? (
+                                <EditMessage message={message} onEdited={finishEdit} />
+                            ) : (
+                                <section onDoubleClick={() => handleEdit(message.id)}>{message.message}</section>
+                            )}
+                        </article>
+                    );
+                })}
+                <MessageInput />
+            </div>
+        </>
     );
 };

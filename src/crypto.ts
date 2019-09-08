@@ -65,7 +65,7 @@ export const importKey = async (jwk: JsonWebKey, keyUsages: 'sign' | 'verify' | 
 };
 
 const encode = (message: RTCChatMessage) =>
-    new TextEncoder().encode(`${message.authorId}:${message.id}:${message.timestamp}`);
+    new TextEncoder().encode(`${message.author.id}:${message.id}:${message.timestamp}`);
 
 export const signMessage = async (privateKey: CryptoKey, message: RTCChatMessage) => {
     const signature = await window.crypto.subtle.sign(

@@ -46,7 +46,7 @@ export interface Author {
 }
 
 export interface RTCChatMessage {
-    authorId: string;
+    author: Author;
     edited: boolean;
     id: string;
     key: 'rtc:chat';
@@ -84,8 +84,8 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         key,
     });
 
-export const createMessage = (authorId: string, message: string): RTCChatMessage => ({
-    authorId,
+export const createMessage = (author: Author, message: string): RTCChatMessage => ({
+    author,
     edited: false,
     id: generateID(),
     message,
@@ -93,8 +93,8 @@ export const createMessage = (authorId: string, message: string): RTCChatMessage
     key: 'rtc:chat',
 });
 
-export const createEdit = (authorId: string, id: string, message: string): RTCChatMessage => ({
-    authorId,
+export const createEdit = (author: Author, id: string, message: string): RTCChatMessage => ({
+    author,
     edited: true,
     id,
     message,

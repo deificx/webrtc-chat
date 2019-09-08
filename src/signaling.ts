@@ -10,7 +10,7 @@ import {
 } from './types';
 import {verifyMessage, importKey, signMessage, getKeys, exportKey} from './crypto';
 
-type SubscriberFn = (message: RTCChatMessage | RTCKeyMessage) => void;
+type SubscriberFn = (message: RTCChatMessage | RTCKeyMessage | {key: 'clear:author'; id: string}) => void;
 
 class Signaling {
     private connections: {
@@ -30,7 +30,6 @@ class Signaling {
         this.setup = this.setup.bind(this);
         this.addSubscriber = this.addSubscriber.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
-        this.getAuthors = this.getAuthors.bind(this);
     }
 
     async setup(author: Author) {
@@ -39,6 +38,8 @@ class Signaling {
         this.author = author;
 
         this.keys = await getKeys();
+
+        this.subscribers.forEach(fn => fn({author: this.author, exportedPublicKey: {}, key: 'rtc:public-key'}));
 
         this.ws = new WebSocket(`ws://${window.location.hostname}:4321`);
 
@@ -87,12 +88,6 @@ class Signaling {
         }
     }
 
-    getAuthors() {
-        return Object.values(this.connections)
-            .filter(connection => connection.author && connection.pc.connectionState === 'connected')
-            .map(connection => connection.author);
-    }
-
     private addMessage(message: RTCChatMessage) {
         this.messages.push(message);
         this.subscribers.forEach(fn => fn(message));
@@ -104,7 +99,7 @@ class Signaling {
             console.warn('cannot find author or publicKey, ignoring edit', message);
             return;
         }
-        const index = this.messages.findIndex(m => m.id === message.id && author.id === message.authorId);
+        const index = this.messages.findIndex(m => m.id === message.id && author.id === message.author.id);
         if (
             index >= 0 &&
             index < this.messages.length &&
@@ -166,6 +161,10 @@ class Signaling {
     }
 
     private channelEvents(channel: RTCDataChannel, to: string) {
+        channel.onclose = () => {
+            console.warn('connection closed, it seems');
+        };
+
         channel.onopen = async () => {
             if (!this.keys) {
                 console.error('keys has not been configured, aborting');
@@ -174,7 +173,6 @@ class Signaling {
             }
             const exportedPublicKey = await exportKey(this.keys.publicKey);
             const message = publicKeyMessage(this.author, exportedPublicKey);
-            this.subscribers.forEach(fn => fn(message));
             channel.send(JSON.stringify(message));
         };
 
@@ -204,6 +202,17 @@ class Signaling {
                 console.error(error);
             }
         };
+    }
+
+    private cleanupConnection(to: string) {
+        if (!this.connections[to]) {
+            console.log('connection already cleaned up');
+            return;
+        }
+        console.log(`received disconnect signal to ${to}, cleaning up`);
+        const connection = this.connections[to];
+        delete this.connections[to];
+        this.subscribers.forEach(fn => fn({key: 'clear:author', id: connection.author!.id}));
     }
 
     private async createPC(to: string, sdp?: RTCSessionDescription) {
@@ -236,6 +245,20 @@ class Signaling {
             await pc.setLocalDescription(await pc.createOffer());
             if (pc.localDescription) {
                 this.sendRenegotiation(to, pc.localDescription);
+            }
+        };
+
+        pc.onconnectionstatechange = _ => {
+            console.log(`connection state for ${to} = ${pc.connectionState}`);
+            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                this.cleanupConnection(to);
+            }
+        };
+
+        pc.oniceconnectionstatechange = _ => {
+            console.log(`ice connection state for ${to} = ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                this.cleanupConnection(to);
             }
         };
 

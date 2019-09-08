@@ -11,7 +11,7 @@ export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => voi
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        signaling.sendMessage(createEdit(message.authorId, message.id, value));
+        signaling.sendMessage(createEdit(message.author, message.id, value));
         onEdited();
     };
 
