@@ -76,7 +76,7 @@ export const Messages: React.FC = () => {
                 <h2>Participants</h2>
                 <ul>
                     {state.authors.map(a => (
-                        <li key={a.id}>{a.displayName}</li>
+                        <li key={a.id}>{a.id === author.id ? <strong>{a.displayName}</strong> : a.displayName}</li>
                     ))}
                 </ul>
             </div>
