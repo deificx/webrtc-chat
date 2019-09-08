@@ -21,6 +21,7 @@ class Signaling {
     private buffers: {[key: string]: WebSocketMessage[]} = {};
     private from = '';
     private keys: CryptoKeyPair | undefined;
+    private messages: RTCChatMessage[] = [];
     private processes = new Set<string>();
     private subscribers: SubscriberFn[] = [];
     private ws: WebSocket | undefined;
@@ -74,7 +75,7 @@ class Signaling {
             console.log(this.keys);
             return;
         }
-        this.subscribers.forEach(fn => fn(message));
+        this.addMessage(message);
         const signedMessage = await signMessage(this.keys.privateKey, message);
         for (const to in this.connections) {
             if (Object.hasOwnProperty.call(this.connections, to)) {
@@ -90,6 +91,32 @@ class Signaling {
         return Object.values(this.connections)
             .filter(connection => connection.author && connection.pc.connectionState === 'connected')
             .map(connection => connection.author);
+    }
+
+    private addMessage(message: RTCChatMessage) {
+        this.messages.push(message);
+        this.subscribers.forEach(fn => fn(message));
+    }
+
+    private async editMessage(message: RTCChatMessage, to: string) {
+        const {author, publicKey} = this.connections[to];
+        if (!author || !publicKey) {
+            console.warn('cannot find author or publicKey, ignoring edit', message);
+            return;
+        }
+        const index = this.messages.findIndex(m => m.id === message.id && author.id === message.authorId);
+        if (
+            index >= 0 &&
+            index < this.messages.length &&
+            (await verifyMessage(publicKey, message)) &&
+            (await verifyMessage(publicKey, this.messages[index]))
+        ) {
+            console.log('editing message', message);
+            this.messages[index] = message;
+            this.subscribers.forEach(fn => fn(message));
+        } else {
+            console.warn('cannot verify message, ignoring edit');
+        }
     }
 
     private getID(): Promise<string> {
@@ -156,19 +183,19 @@ class Signaling {
                 const message: RTCChatMessage | RTCKeyMessage = JSON.parse(event.data);
                 switch (message.key) {
                     case 'rtc:chat': {
-                        this.subscribers.forEach(fn => fn(message));
-                        const {publicKey} = this.connections[to];
-                        if (publicKey) {
-                            console.log(message, await verifyMessage(publicKey, message));
+                        if (message.edited) {
+                            this.editMessage(message, to);
+                        } else {
+                            this.addMessage(message);
                         }
                         break;
                     }
 
                     case 'rtc:public-key': {
-                        this.subscribers.forEach(fn => fn(message));
                         const publicKey = await importKey(message.exportedPublicKey, 'verify');
                         this.connections[to].publicKey = publicKey;
                         this.connections[to].author = message.author;
+                        this.subscribers.forEach(fn => fn({...message, publicKey}));
                         break;
                     }
                 }

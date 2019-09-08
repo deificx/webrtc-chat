@@ -47,6 +47,7 @@ export interface Author {
 
 export interface RTCChatMessage {
     authorId: string;
+    edited: boolean;
     id: string;
     key: 'rtc:chat';
     message: string;
@@ -57,6 +58,7 @@ export interface RTCChatMessage {
 export interface RTCKeyMessage {
     author: Author;
     key: 'rtc:public-key';
+    publicKey?: CryptoKey;
     exportedPublicKey: JsonWebKey;
 }
 
@@ -84,7 +86,17 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
 
 export const createMessage = (authorId: string, message: string): RTCChatMessage => ({
     authorId,
+    edited: false,
     id: generateID(),
+    message,
+    timestamp: Date.now(),
+    key: 'rtc:chat',
+});
+
+export const createEdit = (authorId: string, id: string, message: string): RTCChatMessage => ({
+    authorId,
+    edited: true,
+    id,
     message,
     timestamp: Date.now(),
     key: 'rtc:chat',
