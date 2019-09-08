@@ -1,4 +1,4 @@
-import {generateID} from './crypto';
+import {generateID, exportPublicKey} from './crypto';
 
 export interface Sdp {
     from: string;
@@ -40,7 +40,13 @@ export interface PCDataChannelEvent {
     type: 'pc:datachannel';
 }
 
+export interface Author {
+    id: string;
+    displayName: string;
+}
+
 export interface RTCChatMessage {
+    author: Author;
     id: string;
     key: 'rtc:chat';
     message: string;
@@ -49,6 +55,7 @@ export interface RTCChatMessage {
 }
 
 export interface RTCKeyMessage {
+    author: Author;
     key: 'rtc:public-key';
     exportedPublicKey: JsonWebKey;
 }
@@ -75,15 +82,18 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         key,
     });
 
-export const createMessage = (message: string): RTCChatMessage => ({
-    id: generateID(),
-    message,
-    timestamp: Date.now(),
-    key: 'rtc:chat',
-});
+export const createMessage = (author: Author) => {
+    return (message: string): RTCChatMessage => ({
+        author,
+        id: generateID(),
+        message,
+        timestamp: Date.now(),
+        key: 'rtc:chat',
+    });
+};
 
-export const publicKeyMessage = async (publicKey: CryptoKey): Promise<string> =>
+export const publicKeyMessage = async (): Promise<string> =>
     JSON.stringify({
         key: 'rtc:public-key',
-        exportedPublicKey: await crypto.subtle.exportKey('jwk', publicKey),
+        exportedPublicKey: await exportPublicKey(),
     });

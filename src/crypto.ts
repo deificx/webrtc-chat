@@ -6,7 +6,7 @@ export const generateID = (segments = 3): string => {
     return array.join('-');
 };
 
-export const generateKeys = async () =>
+const generateKeys = async () =>
     await window.crypto.subtle.generateKey(
         {
             name: 'ECDSA',
@@ -15,6 +15,44 @@ export const generateKeys = async () =>
         true,
         ['sign', 'verify']
     );
+
+export const getKeys = async (): Promise<CryptoKeyPair> => {
+    const privateKey = localStorage.getItem('webrtc-chat:privateKey');
+    const publicKey = localStorage.getItem('webrtc-chat:publicKey');
+    if (!privateKey || !publicKey) {
+        const keys = await generateKeys();
+        localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
+        localStorage.setItem('webrtc-chat: ', JSON.stringify(await exportKey(keys.publicKey)));
+        return keys;
+    }
+    const keys: CryptoKeyPair = {
+        privateKey: await importKey(JSON.parse(privateKey)),
+        publicKey: await importKey(JSON.parse(publicKey)),
+    };
+    return keys;
+};
+
+const exportKey = async (key: CryptoKey) => {
+    return await crypto.subtle.exportKey('jwk', key);
+};
+
+export const exportPublicKey = async () => {
+    const {publicKey} = await getKeys();
+    return exportKey(publicKey);
+};
+
+export const importKey = async (jwk: JsonWebKey) => {
+    return await crypto.subtle.importKey(
+        'jwk',
+        jwk,
+        {
+            name: 'ECDSA',
+            namedCurve: 'P-384',
+        },
+        true,
+        ['verify']
+    );
+};
 
 const encode = (message: RTCChatMessage) =>
     new TextEncoder().encode(`${message.id}:${message.timestamp}:${message.message}`);

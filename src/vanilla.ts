@@ -9,7 +9,7 @@ import {
     publicKeyMessage,
     RTCKeyMessage,
 } from './types';
-import {generateKeys, signMessage, verifyMessage} from './crypto';
+import {signMessage, verifyMessage, importKey} from './crypto';
 
 interface Actions {
     createPC: (to: string, sdp?: RTCSessionDescription) => Promise<RTCPeerConnection>;
@@ -49,11 +49,10 @@ const socket = async () => {
     const from = await getID(ws);
     const connections: {[key: string]: {channel?: RTCDataChannel; pc: RTCPeerConnection; publicKey?: CryptoKey}} = {};
     const messages = new Messages();
-    const keyPair = await generateKeys();
 
     const channelEvents = (channel: RTCDataChannel, to: string) => {
         channel.onopen = async () => {
-            channel.send(await publicKeyMessage(keyPair.publicKey));
+            channel.send(await publicKeyMessage());
         };
 
         channel.onmessage = async event => {
@@ -70,16 +69,7 @@ const socket = async () => {
                     }
 
                     case 'rtc:public-key': {
-                        const publicKey = await crypto.subtle.importKey(
-                            'jwk',
-                            message.exportedPublicKey,
-                            {
-                                name: 'ECDSA',
-                                namedCurve: 'P-384',
-                            },
-                            true,
-                            ['verify']
-                        );
+                        const publicKey = await importKey(message.exportedPublicKey);
                         connections[to].publicKey = publicKey;
                         break;
                     }

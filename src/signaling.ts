@@ -1,0 +1,320 @@
+import {
+    announceMessage,
+    Author,
+    iceMessage,
+    publicKeyMessage,
+    RTCChatMessage,
+    RTCKeyMessage,
+    sdpMessage,
+    WebSocketMessage,
+    Sdp,
+    IceCandidate,
+} from './types';
+import {verifyMessage, importKey, signMessage, getKeys} from './crypto';
+
+class Signaling {
+    private connections: {
+        [key: string]: {author?: Author; channel?: RTCDataChannel; pc: RTCPeerConnection; publicKey?: CryptoKey};
+    } = {};
+
+    private buffers: {[key: string]: WebSocketMessage[]} = {};
+    private from = '';
+    private keys: CryptoKeyPair | undefined;
+    private processes = new Set<string>();
+    private ws: WebSocket | undefined;
+
+    constructor(private subscribers: Array<(message: RTCChatMessage) => void> = []) {}
+
+    async setup() {
+        this.ws = new WebSocket(`ws://${window.location.hostname}:4321`);
+
+        this.ws.onclose = event => {
+            console.log('socket closed', event);
+        };
+
+        this.ws.onopen = event => {
+            console.log('socket opened', event);
+        };
+
+        this.from = await this.getID();
+        this.keys = await getKeys();
+
+        this.ws.onmessage = event => {
+            try {
+                const message: WebSocketMessage = JSON.parse(event.data);
+                this.push(message);
+            } catch (error) {
+                console.error('parsing socket message failed');
+                console.error(error);
+            }
+        };
+
+        this.ws.send(announceMessage({from: this.from, key: 'announce'}));
+    }
+
+    addSubscriber(fn: (message: RTCChatMessage) => void) {
+        this.subscribers.push(fn);
+    }
+
+    async sendMessage(message: RTCChatMessage) {
+        if (!this.keys) {
+            throw new Error('keys has not been configured');
+        }
+        this.subscribers.forEach(fn => fn(message));
+        const signedMessage = await signMessage(this.keys.privateKey, message);
+        for (const to in this.connections) {
+            if (Object.hasOwnProperty.call(this.connections, to)) {
+                const {channel} = this.connections[to];
+                if (channel) {
+                    channel.send(JSON.stringify(signedMessage));
+                }
+            }
+        }
+    }
+
+    private getID(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            if (!this.ws) {
+                throw Error('expected a websocket');
+            }
+            this.ws.onmessage = event => {
+                try {
+                    const message: WebSocketMessage = JSON.parse(event.data);
+                    if (message.key === 'id') {
+                        console.log(`id:${message.id}`);
+                        resolve(message.id);
+                    } else {
+                        reject(new Error('first message was not id'));
+                    }
+                } catch (error) {
+                    reject(error);
+                } finally {
+                    this.ws!.onmessage = null;
+                }
+            };
+        });
+    }
+
+    private send(msg: string) {
+        if (!this.ws) {
+            throw new Error('expected a websocket');
+        }
+        this.ws.send(msg);
+    }
+
+    private sendAnswer(to: string, sdp: RTCSessionDescription) {
+        this.send(sdpMessage({from: this.from, to, sdp, key: 'answer'}));
+    }
+
+    private sendOffer(to: string, sdp: RTCSessionDescription) {
+        this.send(sdpMessage({from: this.from, to, sdp, key: 'offer'}));
+    }
+
+    private sendIceCandidate(to: string, candidate: RTCIceCandidate) {
+        this.send(iceMessage({from: this.from, to, candidate, key: 'ice-candidate'}));
+    }
+
+    private sendRenegotiation(to: string, sdp: RTCSessionDescription) {
+        this.send(sdpMessage({from: this.from, to, sdp, key: 'renegotiate'}));
+    }
+
+    private channelEvents(channel: RTCDataChannel, to: string) {
+        channel.onopen = async () => {
+            channel.send(await publicKeyMessage());
+        };
+
+        channel.onmessage = async event => {
+            try {
+                const message: RTCChatMessage | RTCKeyMessage = JSON.parse(event.data);
+                switch (message.key) {
+                    case 'rtc:chat': {
+                        this.subscribers.forEach(fn => fn(message));
+                        const {publicKey} = this.connections[to];
+                        if (publicKey) {
+                            console.log(message, await verifyMessage(publicKey, message));
+                        }
+                        break;
+                    }
+
+                    case 'rtc:public-key': {
+                        const publicKey = await importKey(message.exportedPublicKey);
+                        this.connections[to].publicKey = publicKey;
+                        this.connections[to].author = message.author;
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('failed to parse chat message');
+                console.error(error);
+            }
+        };
+    }
+
+    private async createPC(to: string, sdp?: RTCSessionDescription) {
+        const pc = new RTCPeerConnection({
+            iceServers: [
+                {urls: [`stun:${window.location.hostname}:3478`]},
+                {
+                    credential: 'a',
+                    credentialType: 'password',
+                    username: 'a',
+                    urls: [`turn:${window.location.hostname}:3478`],
+                },
+            ],
+        });
+
+        this.connections[to] = {pc};
+
+        pc.ondatachannel = event => {
+            this.connections[to].channel = event.channel;
+            this.channelEvents(event.channel, to);
+        };
+
+        pc.onicecandidate = event => {
+            if (event.candidate) {
+                this.sendIceCandidate(to, event.candidate);
+            }
+        };
+
+        pc.onnegotiationneeded = async _ => {
+            await pc.setLocalDescription(await pc.createOffer());
+            if (pc.localDescription) {
+                this.sendRenegotiation(to, pc.localDescription);
+            }
+        };
+
+        if (sdp) {
+            const sessionDescription = new RTCSessionDescription(sdp);
+            await pc.setRemoteDescription(sessionDescription);
+            await pc.setLocalDescription(await pc.createAnswer());
+        } else {
+            await pc.setLocalDescription(await pc.createOffer());
+            this.onSignalingState(to, 'stable', () => {
+                const channel = pc.createDataChannel('chat');
+                this.connections[to].channel = channel;
+                this.channelEvents(channel, to);
+            });
+        }
+
+        return pc;
+    }
+
+    private onSignalingState(
+        remoteId: string,
+        state: RTCSignalingState | null,
+        callBack: (pc: RTCPeerConnection) => void
+    ) {
+        let pc: RTCPeerConnection | null = null;
+
+        if (Object.hasOwnProperty.call(this.connections, remoteId) && this.connections[remoteId].pc) {
+            pc = this.connections[remoteId].pc;
+        }
+
+        if (!pc) {
+            throw new Error('cannot find peer connection');
+        }
+
+        if (!state) {
+            callBack(pc);
+            return;
+        }
+
+        if (pc.signalingState === state) {
+            callBack(pc);
+            return;
+        }
+
+        pc.onsignalingstatechange = () => {
+            if (pc && pc.signalingState === state) {
+                pc.onsignalingstatechange = null;
+                callBack(pc);
+            }
+        };
+    }
+
+    private async handleSocketMessage(message: WebSocketMessage) {
+        console.log(message);
+        switch (message.key) {
+            case 'announce': {
+                // got a remote id, new peer connection, create offer
+                const pc = await this.createPC(message.from);
+                if (pc.localDescription) {
+                    this.sendOffer(message.from, pc.localDescription);
+                }
+                break;
+            }
+
+            case 'answer': {
+                // got an sdp back, setRemoteDescription
+                this.onSignalingState(message.from, 'have-local-offer', async pc => {
+                    const sessionDescription = new RTCSessionDescription(message.sdp);
+                    await pc.setRemoteDescription(sessionDescription);
+                });
+                break;
+            }
+
+            case 'ice-candidate': {
+                // got a candidate, add it
+                this.onSignalingState(message.from, 'stable', async pc => {
+                    await pc.addIceCandidate(message.candidate);
+                });
+                break;
+            }
+
+            case 'offer': {
+                // got an SDP, new peer connection, set remote, create answer, answer
+                const pc = await this.createPC(message.from, message.sdp);
+                if (pc.localDescription) {
+                    this.sendAnswer(message.from, pc.localDescription);
+                }
+                break;
+            }
+
+            case 'renegotiate': {
+                // got an SDP, get peer connection, set remote, create answer, answer
+                this.onSignalingState(message.from, 'stable', async pc => {
+                    const sessionDescription = new RTCSessionDescription(message.sdp);
+                    await pc.setRemoteDescription(sessionDescription);
+                    await pc.setLocalDescription(await pc.createAnswer());
+                    if (pc.localDescription) {
+                        this.sendAnswer(message.from, pc.localDescription);
+                    }
+                });
+                break;
+            }
+        }
+    }
+
+    private push(message: WebSocketMessage) {
+        if (message.key === 'id') {
+            return;
+        }
+        this.createAndAddToBuffer(message.from, message);
+        if (!this.processes.has(message.from)) {
+            this.process(message.from);
+        }
+    }
+
+    private createAndAddToBuffer(remoteId: string, message: WebSocketMessage) {
+        if (Object.hasOwnProperty.call(this.buffers, remoteId)) {
+            this.buffers[remoteId].push(message);
+        } else {
+            this.buffers[remoteId] = [message];
+        }
+    }
+
+    private async process(remoteId: string) {
+        const message = this.buffers[remoteId].shift();
+        if (message) {
+            this.processes.add(remoteId);
+            console.log('processing', message);
+            await this.handleSocketMessage(message);
+            this.processes.delete(remoteId);
+        }
+        if (this.buffers[remoteId].length) {
+            this.process(remoteId);
+        }
+    }
+}
+
+export const signaling = new Signaling();

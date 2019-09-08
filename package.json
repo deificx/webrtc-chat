@@ -10,6 +10,8 @@
         "eventemitter3": "^4.0.0",
         "immer": "^3.2.0",
         "node-turn": "^0.0.4",
+        "react": "^16.9.0",
+        "react-dom": "^16.9.0",
         "redux": "^4.0.4",
         "redux-saga": "^1.0.5",
         "uuid": "^3.3.3",
@@ -17,6 +19,8 @@
         "ws": "^7.1.2"
     },
     "devDependencies": {
+        "@types/react": "^16.9.2",
+        "@types/react-dom": "^16.9.0",
         "@types/uuid": "^3.4.5",
         "@types/ws": "^6.0.3",
         "parcel": "^1.12.3",
