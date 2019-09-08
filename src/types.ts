@@ -1,4 +1,4 @@
-import {generateID, exportPublicKey} from './crypto';
+import {generateID} from './crypto';
 
 export interface Sdp {
     from: string;
@@ -46,7 +46,7 @@ export interface Author {
 }
 
 export interface RTCChatMessage {
-    author: Author;
+    authorId: string;
     id: string;
     key: 'rtc:chat';
     message: string;
@@ -82,18 +82,16 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         key,
     });
 
-export const createMessage = (author: Author) => {
-    return (message: string): RTCChatMessage => ({
-        author,
-        id: generateID(),
-        message,
-        timestamp: Date.now(),
-        key: 'rtc:chat',
-    });
-};
+export const createMessage = (authorId: string, message: string): RTCChatMessage => ({
+    authorId,
+    id: generateID(),
+    message,
+    timestamp: Date.now(),
+    key: 'rtc:chat',
+});
 
-export const publicKeyMessage = async (): Promise<string> =>
-    JSON.stringify({
-        key: 'rtc:public-key',
-        exportedPublicKey: await exportPublicKey(),
-    });
+export const publicKeyMessage = (author: Author, exportedPublicKey: JsonWebKey): RTCKeyMessage => ({
+    author,
+    key: 'rtc:public-key',
+    exportedPublicKey,
+});

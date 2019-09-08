@@ -16,32 +16,42 @@ const generateKeys = async () =>
         ['sign', 'verify']
     );
 
+// TODO: use indexedDB to store and retrieve keys
 export const getKeys = async (): Promise<CryptoKeyPair> => {
-    const privateKey = localStorage.getItem('webrtc-chat:privateKey');
-    const publicKey = localStorage.getItem('webrtc-chat:publicKey');
-    if (!privateKey || !publicKey) {
-        const keys = await generateKeys();
-        localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
-        localStorage.setItem('webrtc-chat: ', JSON.stringify(await exportKey(keys.publicKey)));
-        return keys;
-    }
-    const keys: CryptoKeyPair = {
-        privateKey: await importKey(JSON.parse(privateKey)),
-        publicKey: await importKey(JSON.parse(publicKey)),
-    };
+    // let privateKey: string | CryptoKey | null = localStorage.getItem('webrtc-chat:privateKey');
+    // let publicKey: string | CryptoKey | null = localStorage.getItem('webrtc-chat:publicKey');
+    // if (!privateKey || !publicKey) {
+    const keys = await generateKeys();
+    // localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
+    // localStorage.setItem('webrtc-chat:publicKey', JSON.stringify(await exportKey(keys.publicKey)));
     return keys;
+    // }
+    // console.log('reusing keys');
+    // try {
+    //     const privateJWK: JsonWebKey = JSON.parse(privateKey);
+    //     privateKey = await importKey(privateJWK, ['sign', 'verify']);
+    //     const publicJWK: JsonWebKey = JSON.parse(publicKey);
+    //     publicKey = await importKey(publicJWK, ['sign', 'verify']);
+    //     console.log('got keys');
+    //     return {
+    //         privateKey,
+    //         publicKey,
+    //     };
+    // } catch (error) {
+    //     console.error(error);
+    // }
+    // console.log('could not get keys, regenerating');
+    // const keys = await generateKeys();
+    // localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
+    // localStorage.setItem('webrtc-chat:publicKey', JSON.stringify(await exportKey(keys.publicKey)));
+    // return keys;
 };
 
-const exportKey = async (key: CryptoKey) => {
+export const exportKey = async (key: CryptoKey) => {
     return await crypto.subtle.exportKey('jwk', key);
 };
 
-export const exportPublicKey = async () => {
-    const {publicKey} = await getKeys();
-    return exportKey(publicKey);
-};
-
-export const importKey = async (jwk: JsonWebKey) => {
+export const importKey = async (jwk: JsonWebKey, keyUsages: 'sign' | 'verify' | ['sign', 'verify']) => {
     return await crypto.subtle.importKey(
         'jwk',
         jwk,
@@ -50,12 +60,12 @@ export const importKey = async (jwk: JsonWebKey) => {
             namedCurve: 'P-384',
         },
         true,
-        ['verify']
+        Array.isArray(keyUsages) ? keyUsages : [keyUsages]
     );
 };
 
 const encode = (message: RTCChatMessage) =>
-    new TextEncoder().encode(`${message.id}:${message.timestamp}:${message.message}`);
+    new TextEncoder().encode(`${message.authorId}:${message.id}:${message.timestamp}`);
 
 export const signMessage = async (privateKey: CryptoKey, message: RTCChatMessage) => {
     const signature = await window.crypto.subtle.sign(

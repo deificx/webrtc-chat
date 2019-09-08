@@ -29,17 +29,16 @@ export const Login: React.FC<{}> = ({children}) => {
         } else if (dialog.current) {
             const name = window.prompt('Username');
             setUsername(name || 'Guest');
-            setLoggedIn(true);
+            window.setInterval(setLoggedIn, 0, true);
         }
     }, [dialog]);
 
     useEffect(() => {
-        if (!loggedIn) {
+        if (!loggedIn || !username) {
             return;
         }
-        signaling.setup();
-        return;
-    }, [loggedIn]);
+        signaling.setup({displayName: username, id});
+    }, [loggedIn, username]);
 
     if (loggedIn) {
         return <User.Provider value={{displayName: username, id}}>{React.Children.only(children)}</User.Provider>;

@@ -1,15 +1,35 @@
 import React, {useEffect, useReducer} from 'react';
 import {signaling} from '../signaling';
-import {RTCChatMessage} from '../types';
+import {RTCChatMessage, RTCKeyMessage, Author} from '../types';
 import produce from 'immer';
 
-type State = RTCChatMessage[];
-type Actions = RTCChatMessage;
+interface State {
+    authors: Author[];
+    messages: RTCChatMessage[];
+}
+type Actions = RTCChatMessage | RTCKeyMessage;
 
-const reducer = (state: State, action: Actions) => produce(state, draft => [...draft, action]);
+const initialState: State = {
+    authors: [],
+    messages: [],
+};
+
+const reducer = (state: State, action: Actions) =>
+    produce(state, draft => {
+        console.log(action);
+        switch (action.key) {
+            case 'rtc:chat':
+                draft.messages = [...draft.messages, action];
+                break;
+
+            case 'rtc:public-key':
+                draft.authors = [...draft.authors, action.author];
+                break;
+        }
+    });
 
 export const Messages: React.FC = () => {
-    const [state, dispatch] = useReducer(reducer, []);
+    const [state, dispatch] = useReducer(reducer, initialState);
 
     useEffect(() => {
         signaling.addSubscriber(message => dispatch(message));
@@ -18,12 +38,17 @@ export const Messages: React.FC = () => {
 
     return (
         <div>
-            {state.map(message => {
+            {state.messages.map(message => {
                 const time = new Date(message.timestamp);
+                const author = state.authors.find(a => a.id === message.authorId);
+                if (!author) {
+                    console.error('cannot list message without author');
+                    return null;
+                }
                 return (
                     <article key={message.id}>
                         <header>
-                            {message.author.displayName}
+                            {author.displayName}
                             <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
                         </header>
                         <section>{message.message}</section>

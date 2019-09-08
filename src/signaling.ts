@@ -7,25 +7,38 @@ import {
     RTCKeyMessage,
     sdpMessage,
     WebSocketMessage,
-    Sdp,
-    IceCandidate,
 } from './types';
-import {verifyMessage, importKey, signMessage, getKeys} from './crypto';
+import {verifyMessage, importKey, signMessage, getKeys, exportKey} from './crypto';
+
+type SubscriberFn = (message: RTCChatMessage | RTCKeyMessage) => void;
 
 class Signaling {
     private connections: {
         [key: string]: {author?: Author; channel?: RTCDataChannel; pc: RTCPeerConnection; publicKey?: CryptoKey};
     } = {};
 
+    private author: Author = {displayName: '', id: ''};
     private buffers: {[key: string]: WebSocketMessage[]} = {};
     private from = '';
     private keys: CryptoKeyPair | undefined;
     private processes = new Set<string>();
+    private subscribers: SubscriberFn[] = [];
     private ws: WebSocket | undefined;
 
-    constructor(private subscribers: Array<(message: RTCChatMessage) => void> = []) {}
+    constructor() {
+        this.setup = this.setup.bind(this);
+        this.addSubscriber = this.addSubscriber.bind(this);
+        this.sendMessage = this.sendMessage.bind(this);
+        this.getAuthors = this.getAuthors.bind(this);
+    }
 
-    async setup() {
+    async setup(author: Author) {
+        console.log('setting up signaling', author);
+
+        this.author = author;
+
+        this.keys = await getKeys();
+
         this.ws = new WebSocket(`ws://${window.location.hostname}:4321`);
 
         this.ws.onclose = event => {
@@ -37,7 +50,6 @@ class Signaling {
         };
 
         this.from = await this.getID();
-        this.keys = await getKeys();
 
         this.ws.onmessage = event => {
             try {
@@ -52,13 +64,15 @@ class Signaling {
         this.ws.send(announceMessage({from: this.from, key: 'announce'}));
     }
 
-    addSubscriber(fn: (message: RTCChatMessage) => void) {
+    addSubscriber(fn: SubscriberFn) {
         this.subscribers.push(fn);
     }
 
     async sendMessage(message: RTCChatMessage) {
         if (!this.keys) {
-            throw new Error('keys has not been configured');
+            console.error('keys has not been configured, aborting');
+            console.log(this.keys);
+            return;
         }
         this.subscribers.forEach(fn => fn(message));
         const signedMessage = await signMessage(this.keys.privateKey, message);
@@ -70,6 +84,12 @@ class Signaling {
                 }
             }
         }
+    }
+
+    getAuthors() {
+        return Object.values(this.connections)
+            .filter(connection => connection.author && connection.pc.connectionState === 'connected')
+            .map(connection => connection.author);
     }
 
     private getID(): Promise<string> {
@@ -120,7 +140,15 @@ class Signaling {
 
     private channelEvents(channel: RTCDataChannel, to: string) {
         channel.onopen = async () => {
-            channel.send(await publicKeyMessage());
+            if (!this.keys) {
+                console.error('keys has not been configured, aborting');
+                console.log(this.keys);
+                return;
+            }
+            const exportedPublicKey = await exportKey(this.keys.publicKey);
+            const message = publicKeyMessage(this.author, exportedPublicKey);
+            this.subscribers.forEach(fn => fn(message));
+            channel.send(JSON.stringify(message));
         };
 
         channel.onmessage = async event => {
@@ -137,7 +165,8 @@ class Signaling {
                     }
 
                     case 'rtc:public-key': {
-                        const publicKey = await importKey(message.exportedPublicKey);
+                        this.subscribers.forEach(fn => fn(message));
+                        const publicKey = await importKey(message.exportedPublicKey, 'verify');
                         this.connections[to].publicKey = publicKey;
                         this.connections[to].author = message.author;
                         break;
