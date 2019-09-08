@@ -91,7 +91,9 @@ export const Messages: React.FC = () => {
                                 {author ? author.displayName : <del>{message.author.displayName}</del>}
                                 <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
                             </header>
-                            {state.editing === message.id ? (
+                            {message.edited && message.message === '' ? (
+                                <ins>message deleted</ins>
+                            ) : state.editing === message.id ? (
                                 <EditMessage message={message} onEdited={finishEdit} />
                             ) : (
                                 <section onDoubleClick={() => handleEdit(message.id)}>{message.message}</section>
