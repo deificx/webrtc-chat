@@ -3,11 +3,11 @@ console.clear();
 import React from 'react';
 import {render} from 'react-dom';
 import {Login} from './components/Login';
-import {Messages} from './components/Messages';
+import {Room} from './components/Room';
 
 const App: React.FC = () => (
     <Login>
-        <Messages />
+        <Room />
     </Login>
 );
 

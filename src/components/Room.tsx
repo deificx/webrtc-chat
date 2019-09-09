@@ -53,7 +53,7 @@ const reducer = (state: State, action: Actions) =>
         }
     });
 
-const Room = styled.div`
+const RoomContainer = styled.div`
     background-color: #ebebeb;
     display: flex;
     flex-direction: column;
@@ -62,7 +62,7 @@ const Room = styled.div`
     width: 360px;
 `;
 
-export const Messages: React.FC = () => {
+export const Room: React.FC = () => {
     const [state, dispatch] = useReducer(reducer, initialState);
     const [tab, setTab] = useState('chat');
     const author = useContext(User);
@@ -87,7 +87,7 @@ export const Messages: React.FC = () => {
     };
 
     return (
-        <Room>
+        <RoomContainer>
             <h1 className="roomTitle">Daily Standup Meeting</h1>
             <Tabs
                 onSelect={handleSetTab}
@@ -138,6 +138,6 @@ export const Messages: React.FC = () => {
                     <MessageInput />
                 </div>
             )}
-        </Room>
+        </RoomContainer>
     );
 };
