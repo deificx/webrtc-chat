@@ -3,32 +3,10 @@
 <html>
     <head>
         <title>webrtc data channel chat</title>
-        <style type="text/css">
-            #chat {
-                display: flex;
-                flex-direction: row;
-            }
-
-            .container {
-                border: 1px solid black;
-                flex-grow: 1;
-            }
-
-            time {
-                color: lightgrey;
-                display: inline-block;
-                padding-left: 0.5em;
-            }
-
-            article {
-                border: 1px dotted lightgrey;
-                margin: 0 1em 1em;
-                padding: 1em;
-            }
-        </style>
+        <link rel="stylesheet" href="/src/style.css" />
     </head>
     <body>
-        <div id="chat"></div>
+        <div id="root" />
         <script src="/src/index.tsx"></script>
     </body>
 </html>

@@ -17,7 +17,7 @@ export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => voi
 
     return (
         <form onSubmit={handleSubmit}>
-            <input id="message" name="message" onChange={handleChange} value={value} />
+            <input className="chat-input" id="message" name="message" onChange={handleChange} value={value} />
         </form>
     );
 };

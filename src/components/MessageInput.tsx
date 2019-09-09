@@ -19,7 +19,7 @@ export const MessageInput: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <input id="message" name="message" onChange={handleChange} value={value} />
+            <input className="chat-input" id="message" name="message" onChange={handleChange} value={value} />
         </form>
     );
 };

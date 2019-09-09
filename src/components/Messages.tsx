@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer, useContext} from 'react';
+import React, {useEffect, useReducer, useContext, useState, FormEvent} from 'react';
 import {signaling} from '../signaling';
 import {RTCChatMessage, Author, RTCKeyMessage} from '../types';
 import produce from 'immer';
@@ -53,6 +53,7 @@ const reducer = (state: State, action: Actions) =>
 
 export const Messages: React.FC = () => {
     const [state, dispatch] = useReducer(reducer, initialState);
+    const [tab, setTab] = useState('chat');
     const author = useContext(User);
 
     useEffect(() => {
@@ -70,39 +71,72 @@ export const Messages: React.FC = () => {
         dispatch({key: 'edit', id: ''});
     };
 
+    const handleSetTab = (event: FormEvent<HTMLButtonElement>) => {
+        setTab(event.currentTarget.id);
+    };
+
     return (
-        <>
-            <div className="container">
-                <h2>Participants</h2>
-                <ul>
+        <div className="room">
+            <h1 className="roomTitle">Daily Standup Meeting</h1>
+            <div className="tabs">
+                <button
+                    className={tab === 'participants' ? 'active' : ''}
+                    disabled={tab === 'participants'}
+                    id="participants"
+                    onClick={handleSetTab}
+                >
+                    participants ({state.authors.length})
+                </button>
+                <button
+                    className={tab === 'chat' ? 'active' : ''}
+                    disabled={tab === 'chat'}
+                    id="chat"
+                    onClick={handleSetTab}
+                >
+                    chat
+                </button>
+            </div>
+            {tab === 'participants' && (
+                <ul className="main participants">
                     {state.authors.map(a => (
-                        <li key={a.id}>{a.id === author.id ? <strong>{a.displayName}</strong> : a.displayName}</li>
+                        <li className="participant" key={a.id}>
+                            {a.id === author.id ? <strong>{a.displayName}</strong> : a.displayName}
+                        </li>
                     ))}
                 </ul>
-            </div>
-            <div className="container">
-                <h2>Chat</h2>
-                {state.messages.map(message => {
-                    const time = new Date(message.timestamp);
-                    const author = state.authors.find(a => a.id === message.author.id);
-                    return (
-                        <article key={message.id}>
-                            <header>
-                                {author ? author.displayName : <del>{message.author.displayName}</del>}
-                                <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
-                            </header>
-                            {message.edited && message.message === '' ? (
-                                <ins>message deleted</ins>
-                            ) : state.editing === message.id ? (
-                                <EditMessage message={message} onEdited={finishEdit} />
-                            ) : (
-                                <section onDoubleClick={() => handleEdit(message.id)}>{message.message}</section>
-                            )}
-                        </article>
-                    );
-                })}
-                <MessageInput />
-            </div>
-        </>
+            )}
+            {tab === 'chat' && (
+                <div className="main chat">
+                    <div className="content">
+                        {state.messages.map(message => {
+                            const time = new Date(message.timestamp);
+                            const author = state.authors.find(a => a.id === message.author.id);
+                            return (
+                                <article className="msg" key={message.id}>
+                                    <header>
+                                        {author ? (
+                                            <strong>{author.displayName}</strong>
+                                        ) : (
+                                            <del>{message.author.displayName}</del>
+                                        )}
+                                        <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
+                                    </header>
+                                    {message.edited && message.message === '' ? (
+                                        <ins>message deleted</ins>
+                                    ) : state.editing === message.id ? (
+                                        <EditMessage message={message} onEdited={finishEdit} />
+                                    ) : (
+                                        <section onDoubleClick={() => handleEdit(message.id)}>
+                                            {message.message}
+                                        </section>
+                                    )}
+                                </article>
+                            );
+                        })}
+                    </div>
+                    <MessageInput />
+                </div>
+            )}
+        </div>
     );
 };

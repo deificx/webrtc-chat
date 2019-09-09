@@ -11,4 +11,4 @@ const App: React.FC = () => (
     </Login>
 );
 
-render(<App />, document.getElementById('chat'));
+render(<App />, document.getElementById('root'));
