@@ -5,6 +5,8 @@ import produce from 'immer';
 import {EditMessage} from './EditMessage';
 import {User} from './Login';
 import {MessageInput} from './MessageInput';
+import styled from 'styled-components';
+import {Tabs} from './Tabs';
 
 interface State {
     authors: Author[];
@@ -51,6 +53,15 @@ const reducer = (state: State, action: Actions) =>
         }
     });
 
+const Room = styled.div`
+    background-color: #ebebeb;
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    height: 100vh;
+    width: 360px;
+`;
+
 export const Messages: React.FC = () => {
     const [state, dispatch] = useReducer(reducer, initialState);
     const [tab, setTab] = useState('chat');
@@ -71,31 +82,21 @@ export const Messages: React.FC = () => {
         dispatch({key: 'edit', id: ''});
     };
 
-    const handleSetTab = (event: FormEvent<HTMLButtonElement>) => {
-        setTab(event.currentTarget.id);
+    const handleSetTab = (id: string) => {
+        setTab(id);
     };
 
     return (
-        <div className="room">
+        <Room>
             <h1 className="roomTitle">Daily Standup Meeting</h1>
-            <div className="tabs">
-                <button
-                    className={tab === 'participants' ? 'active' : ''}
-                    disabled={tab === 'participants'}
-                    id="participants"
-                    onClick={handleSetTab}
-                >
-                    participants ({state.authors.length})
-                </button>
-                <button
-                    className={tab === 'chat' ? 'active' : ''}
-                    disabled={tab === 'chat'}
-                    id="chat"
-                    onClick={handleSetTab}
-                >
-                    chat
-                </button>
-            </div>
+            <Tabs
+                onSelect={handleSetTab}
+                selected={tab}
+                tabs={[
+                    {id: 'participants', label: `participants (${state.authors.length})`},
+                    {id: 'chat', label: 'Chat'},
+                ]}
+            ></Tabs>
             {tab === 'participants' && (
                 <ul className="main participants">
                     {state.authors.map(a => (
@@ -137,6 +138,6 @@ export const Messages: React.FC = () => {
                     <MessageInput />
                 </div>
             )}
-        </div>
+        </Room>
     );
 };
