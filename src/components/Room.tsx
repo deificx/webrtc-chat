@@ -2,14 +2,13 @@ import React, {useEffect, useReducer, useContext, useState, FormEvent} from 'rea
 import {signaling} from '../signaling';
 import {RTCChatMessage, Author, RTCKeyMessage} from '../types';
 import produce from 'immer';
-import {EditMessage} from './EditMessage';
 import {User} from './Login';
-import {MessageInput} from './MessageInput';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
+import {Chat} from './Chat';
 
-interface State {
+export interface State {
     authors: Author[];
     editing: string;
     messages: RTCChatMessage[];
@@ -54,7 +53,7 @@ const reducer = (state: State, action: Actions) =>
         }
     });
 
-const RoomContainer = styled.div`
+const Div = styled.div`
     background-color: #ebebeb;
     display: flex;
     flex-direction: column;
@@ -88,7 +87,7 @@ export const Room: React.FC = () => {
     };
 
     return (
-        <RoomContainer>
+        <Div>
             <h1 className="roomTitle">Daily Standup Meeting</h1>
             <Tabs
                 onSelect={handleSetTab}
@@ -99,38 +98,7 @@ export const Room: React.FC = () => {
                 ]}
             ></Tabs>
             {tab === 'participants' && <Participants author={author} authors={state.authors} />}
-            {tab === 'chat' && (
-                <div className="main chat">
-                    <div className="content">
-                        {state.messages.map(message => {
-                            const time = new Date(message.timestamp);
-                            const author = state.authors.find(a => a.id === message.author.id);
-                            return (
-                                <article className="msg" key={message.id}>
-                                    <header>
-                                        {author ? (
-                                            <strong>{author.displayName}</strong>
-                                        ) : (
-                                            <del>{message.author.displayName}</del>
-                                        )}
-                                        <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
-                                    </header>
-                                    {message.edited && message.message === '' ? (
-                                        <ins>message deleted</ins>
-                                    ) : state.editing === message.id ? (
-                                        <EditMessage message={message} onEdited={finishEdit} />
-                                    ) : (
-                                        <section onDoubleClick={() => handleEdit(message.id)}>
-                                            {message.message}
-                                        </section>
-                                    )}
-                                </article>
-                            );
-                        })}
-                    </div>
-                    <MessageInput />
-                </div>
-            )}
-        </RoomContainer>
+            {tab === 'chat' && <Chat state={state} finishEdit={finishEdit} handleEdit={handleEdit} />}
+        </Div>
     );
 };

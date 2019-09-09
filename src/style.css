@@ -30,14 +30,6 @@ body,
     height: 100vh;
 }
 
-.chat {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding-top: 20px;
-    width: 100%;
-}
-
 .edited {
     color: grey;
     display: inline-block;
@@ -64,12 +56,6 @@ body,
     padding: 1em;
     margin: 20px;
     width: 320px;
-}
-
-.main {
-    background-color: #fff;
-    border-top: 1px solid #e1e3e5;
-    flex-grow: 29;
 }
 
 .roomTitle {
