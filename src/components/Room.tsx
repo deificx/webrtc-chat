@@ -7,6 +7,7 @@ import {User} from './Login';
 import {MessageInput} from './MessageInput';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
+import {Participants} from './Participants';
 
 interface State {
     authors: Author[];
@@ -97,15 +98,7 @@ export const Room: React.FC = () => {
                     {id: 'chat', label: 'Chat'},
                 ]}
             ></Tabs>
-            {tab === 'participants' && (
-                <ul className="main participants">
-                    {state.authors.map(a => (
-                        <li className="participant" key={a.id}>
-                            {a.id === author.id ? <strong>{a.displayName}</strong> : a.displayName}
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {tab === 'participants' && <Participants author={author} authors={state.authors} />}
             {tab === 'chat' && (
                 <div className="main chat">
                     <div className="content">
