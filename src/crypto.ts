@@ -1,4 +1,5 @@
 import {RTCChatMessage} from './types';
+import {getDB} from './db';
 
 export const generateID = (segments = 3): string => {
     const array = new Uint32Array(segments);
@@ -9,42 +10,28 @@ export const generateID = (segments = 3): string => {
 const generateKeys = async () =>
     await window.crypto.subtle.generateKey(
         {
-            name: 'ECDSA',
-            namedCurve: 'P-384',
+            name: 'RSA-PSS',
+            modulusLength: 4096,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: 'SHA-256',
         },
-        true,
+        false,
         ['sign', 'verify']
     );
 
 // TODO: use indexedDB to store and retrieve keys
 export const getKeys = async (): Promise<CryptoKeyPair> => {
-    // let privateKey: string | CryptoKey | null = localStorage.getItem('webrtc-chat:privateKey');
-    // let publicKey: string | CryptoKey | null = localStorage.getItem('webrtc-chat:publicKey');
-    // if (!privateKey || !publicKey) {
+    const keyval = await getDB();
+    const keyPair: CryptoKeyPair | undefined = await keyval.get('keys');
+
+    if (keyPair) {
+        return keyPair;
+    }
+
     const keys = await generateKeys();
-    // localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
-    // localStorage.setItem('webrtc-chat:publicKey', JSON.stringify(await exportKey(keys.publicKey)));
+    await keyval.set('keys', keys);
+
     return keys;
-    // }
-    // console.log('reusing keys');
-    // try {
-    //     const privateJWK: JsonWebKey = JSON.parse(privateKey);
-    //     privateKey = await importKey(privateJWK, ['sign', 'verify']);
-    //     const publicJWK: JsonWebKey = JSON.parse(publicKey);
-    //     publicKey = await importKey(publicJWK, ['sign', 'verify']);
-    //     console.log('got keys');
-    //     return {
-    //         privateKey,
-    //         publicKey,
-    //     };
-    // } catch (error) {
-    //     console.error(error);
-    // }
-    // console.log('could not get keys, regenerating');
-    // const keys = await generateKeys();
-    // localStorage.setItem('webrtc-chat:privateKey', JSON.stringify(await exportKey(keys.privateKey)));
-    // localStorage.setItem('webrtc-chat:publicKey', JSON.stringify(await exportKey(keys.publicKey)));
-    // return keys;
 };
 
 export const exportKey = async (key: CryptoKey) => {
@@ -56,8 +43,8 @@ export const importKey = async (jwk: JsonWebKey, keyUsages: 'sign' | 'verify' | 
         'jwk',
         jwk,
         {
-            name: 'ECDSA',
-            namedCurve: 'P-384',
+            name: 'RSA-PSS',
+            hash: 'SHA-256',
         },
         true,
         Array.isArray(keyUsages) ? keyUsages : [keyUsages]
@@ -70,8 +57,8 @@ const encode = (message: RTCChatMessage) =>
 export const signMessage = async (privateKey: CryptoKey, message: RTCChatMessage) => {
     const signature = await window.crypto.subtle.sign(
         {
-            name: 'ECDSA',
-            hash: {name: 'SHA-384'},
+            name: 'RSA-PSS',
+            saltLength: 32,
         },
         privateKey,
         encode(message)
@@ -85,8 +72,8 @@ export const verifyMessage = async (publicKey: CryptoKey, message: RTCChatMessag
     }
     return await window.crypto.subtle.verify(
         {
-            name: 'ECDSA',
-            hash: {name: 'SHA-384'},
+            name: 'RSA-PSS',
+            saltLength: 32,
         },
         publicKey,
         str2ab(message.signature),

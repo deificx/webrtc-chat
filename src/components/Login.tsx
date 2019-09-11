@@ -2,7 +2,17 @@ import React, {useState, createContext, useRef, useEffect} from 'react';
 import {generateID} from '../crypto';
 import {signaling} from '../signaling';
 
-const id = generateID();
+const getID = () => {
+    const ID = window.localStorage.getItem('webrtc-chat:ID');
+    if (ID) {
+        return ID;
+    }
+    const newID = generateID();
+    window.localStorage.setItem('webrtc-chat:ID', newID);
+    return newID;
+};
+
+const id = getID();
 
 export const User = createContext<{displayName: string; id: string}>({displayName: '', id});
 
