@@ -2,6 +2,7 @@ import React, {useState, useContext} from 'react';
 import {signaling} from '../signaling';
 import {createMessage} from '../types';
 import {User} from './Login';
+import {Input} from './Input';
 
 export const MessageInput: React.FC = () => {
     const [value, setValue] = useState('');
@@ -19,7 +20,7 @@ export const MessageInput: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <input className="chat-input" id="message" name="message" onChange={handleChange} value={value} />
+            <Input id="message" name="message" onChange={handleChange} value={value} />
         </form>
     );
 };

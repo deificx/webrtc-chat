@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {signaling} from '../signaling';
 import {RTCChatMessage, createEdit} from '../types';
+import {Input} from './Input';
 
 export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => void}> = ({message, onEdited}) => {
     const [value, setValue] = useState(message.message);
@@ -17,7 +18,7 @@ export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => voi
 
     return (
         <form onSubmit={handleSubmit}>
-            <input className="chat-input" id="message" name="message" onChange={handleChange} value={value} />
+            <Input id="message" name="message" onChange={handleChange} value={value} />
         </form>
     );
 };

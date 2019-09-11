@@ -15,6 +15,26 @@ const Div = styled.div`
     width: 100%;
 `;
 
+const Message = styled.article`
+    padding: 0 25px 10px;
+`;
+
+const Time = styled.time`
+    color: #9a9fa8;
+    display: inline-block;
+    padding: 0 5px;
+`;
+
+const Section = styled.section`
+    margin: 5px 0;
+`;
+
+const Edit = styled.span`
+    color: grey;
+    display: inline-block;
+    padding: 0 0.5em;
+`;
+
 export const Chat: React.FC<{
     state: State;
     finishEdit: () => void;
@@ -26,19 +46,22 @@ export const Chat: React.FC<{
                 const time = new Date(message.timestamp);
                 const author = state.authors.find(a => a.id === message.author.id);
                 return (
-                    <article className="msg" key={message.id}>
+                    <Message key={message.id}>
                         <header>
                             {author ? <strong>{author.displayName}</strong> : <del>{message.author.displayName}</del>}
-                            <time dateTime={time.toISOString()}>{time.toLocaleString()}</time>
+                            <Time dateTime={time.toISOString()}>{time.toLocaleString()}</Time>
                         </header>
                         {message.edited && message.message === '' ? (
-                            <ins>message deleted</ins>
+                            <del>message deleted</del>
                         ) : state.editing === message.id ? (
                             <EditMessage message={message} onEdited={finishEdit} />
                         ) : (
-                            <section onDoubleClick={() => handleEdit(message.id)}>{message.message}</section>
+                            <>
+                                <Section onDoubleClick={() => handleEdit(message.id)}>{message.message}</Section>
+                                {message.edited && <Edit>(edited)</Edit>}
+                            </>
                         )}
-                    </article>
+                    </Message>
                 );
             })}
             <MessageInput />

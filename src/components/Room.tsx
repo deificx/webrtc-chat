@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
 import {Chat} from './Chat';
+import {Title} from './Title';
 
 export interface State {
     authors: Author[];
@@ -88,7 +89,7 @@ export const Room: React.FC = () => {
 
     return (
         <Div>
-            <h1 className="roomTitle">Daily Standup Meeting</h1>
+            <Title>Daily Standup Meeting</Title>
             <Tabs
                 onSelect={handleSetTab}
                 selected={tab}
