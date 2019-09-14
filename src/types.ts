@@ -62,6 +62,12 @@ export interface RTCKeyMessage {
     exportedPublicKey: JsonWebKey;
 }
 
+export interface RoomState {
+    authors: Author[];
+    editing: string;
+    messages: RTCChatMessage[];
+}
+
 export const sdpMessage = ({from, to, sdp, key}: Sdp): string =>
     JSON.stringify({
         from,

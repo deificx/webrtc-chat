@@ -1,58 +1,13 @@
-import React, {useEffect, useReducer, useContext, useState, FormEvent} from 'react';
+import React, {useEffect, useContext, useState} from 'react';
 import {signaling} from '../signaling';
-import {RTCChatMessage, Author, RTCKeyMessage} from '../types';
-import produce from 'immer';
+import {RTCChatMessage, createMessage, createEdit} from '../types';
 import {User} from './Login';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
 import {Chat} from './Chat';
 import {Title} from './Title';
-
-export interface State {
-    authors: Author[];
-    editing: string;
-    messages: RTCChatMessage[];
-}
-type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string} | {key: 'clear:author'; id: string};
-
-const initialState: State = {
-    authors: [],
-    editing: '',
-    messages: [],
-};
-
-const reducer = (state: State, action: Actions) =>
-    produce(state, draft => {
-        console.log(action);
-        switch (action.key) {
-            case 'clear:author':
-                const index = draft.authors.findIndex(author => author.id === action.id);
-                if (index >= 0 && index < draft.authors.length) {
-                    draft.authors = [...draft.authors.slice(0, index), ...draft.authors.slice(index + 1)];
-                }
-                break;
-
-            case 'edit':
-                draft.editing = action.id;
-                break;
-
-            case 'rtc:chat':
-                if (action.edited) {
-                    const index = draft.messages.findIndex(message => message.id === action.id);
-                    if (index >= 0 && index < draft.messages.length) {
-                        draft.messages[index] = action;
-                    }
-                } else {
-                    draft.messages = [...draft.messages, action];
-                }
-                break;
-
-            case 'rtc:public-key':
-                draft.authors = [...draft.authors, action.author];
-                break;
-        }
-    });
+import {useRoom} from '../hooks/useRoom';
 
 const Div = styled.div`
     background-color: #ebebeb;
@@ -64,7 +19,7 @@ const Div = styled.div`
 `;
 
 export const Room: React.FC = () => {
-    const [state, dispatch] = useReducer(reducer, initialState);
+    const [state, dispatch] = useRoom();
     const [tab, setTab] = useState('chat');
     const author = useContext(User);
 
@@ -79,12 +34,17 @@ export const Room: React.FC = () => {
         }
     };
 
-    const finishEdit = () => {
+    const handleSetTab = (id: string) => {
+        setTab(id);
+    };
+
+    const editMessage = (old: RTCChatMessage, message: string) => {
+        signaling.sendMessage(createEdit(old.author, old.id, message));
         dispatch({key: 'edit', id: ''});
     };
 
-    const handleSetTab = (id: string) => {
-        setTab(id);
+    const sendMessage = (message: string) => {
+        signaling.sendMessage(createMessage(author, message));
     };
 
     return (
@@ -99,7 +59,9 @@ export const Room: React.FC = () => {
                 ]}
             ></Tabs>
             {tab === 'participants' && <Participants author={author} authors={state.authors} />}
-            {tab === 'chat' && <Chat state={state} finishEdit={finishEdit} handleEdit={handleEdit} />}
+            {tab === 'chat' && (
+                <Chat state={state} editMessage={editMessage} handleEdit={handleEdit} sendMessage={sendMessage} />
+            )}
         </Div>
     );
 };

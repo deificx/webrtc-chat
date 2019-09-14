@@ -1,9 +1,11 @@
 import React, {useState} from 'react';
-import {signaling} from '../signaling';
-import {RTCChatMessage, createEdit} from '../types';
+import {RTCChatMessage} from '../types';
 import {Input} from './Input';
 
-export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => void}> = ({message, onEdited}) => {
+export const EditMessage: React.FC<{
+    message: RTCChatMessage;
+    editMessage: (old: RTCChatMessage, message: string) => void;
+}> = ({message, editMessage}) => {
     const [value, setValue] = useState(message.message);
 
     const handleChange = (event: React.FormEvent<HTMLInputElement>) => {
@@ -12,13 +14,12 @@ export const EditMessage: React.FC<{message: RTCChatMessage; onEdited: () => voi
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        signaling.sendMessage(createEdit(message.author, message.id, value));
-        onEdited();
+        editMessage(message, value);
     };
 
     return (
         <form onSubmit={handleSubmit}>
-            <Input id="message" name="message" onChange={handleChange} value={value} />
+            <Input id="message" inline name="message" onChange={handleChange} value={value} />
         </form>
     );
 };

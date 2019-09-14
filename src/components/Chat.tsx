@@ -1,7 +1,7 @@
 import React from 'react';
 import {EditMessage} from './EditMessage';
 import {MessageInput} from './MessageInput';
-import {State} from './Room';
+import {RoomState, RTCChatMessage} from '../types';
 import styled from 'styled-components';
 
 const Div = styled.div`
@@ -36,10 +36,11 @@ const Edit = styled.span`
 `;
 
 export const Chat: React.FC<{
-    state: State;
-    finishEdit: () => void;
+    state: RoomState;
+    editMessage: (old: RTCChatMessage, message: string) => void;
     handleEdit: (id: string) => void;
-}> = ({state, finishEdit, handleEdit}) => {
+    sendMessage: (message: string) => void;
+}> = ({state, editMessage, handleEdit, sendMessage}) => {
     return (
         <Div>
             {state.messages.map(message => {
@@ -54,7 +55,7 @@ export const Chat: React.FC<{
                         {message.edited && message.message === '' ? (
                             <del>message deleted</del>
                         ) : state.editing === message.id ? (
-                            <EditMessage message={message} onEdited={finishEdit} />
+                            <EditMessage message={message} editMessage={editMessage} />
                         ) : (
                             <>
                                 <Section onDoubleClick={() => handleEdit(message.id)}>{message.message}</Section>
@@ -64,7 +65,7 @@ export const Chat: React.FC<{
                     </Message>
                 );
             })}
-            <MessageInput />
+            <MessageInput sendMessage={sendMessage} />
         </Div>
     );
 };

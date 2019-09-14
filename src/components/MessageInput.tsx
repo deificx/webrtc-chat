@@ -1,12 +1,8 @@
-import React, {useState, useContext} from 'react';
-import {signaling} from '../signaling';
-import {createMessage} from '../types';
-import {User} from './Login';
+import React, {useState} from 'react';
 import {Input} from './Input';
 
-export const MessageInput: React.FC = () => {
+export const MessageInput: React.FC<{sendMessage: (message: string) => void}> = ({sendMessage}) => {
     const [value, setValue] = useState('');
-    const author = useContext(User);
 
     const handleChange = (event: React.FormEvent<HTMLInputElement>) => {
         setValue(event.currentTarget.value);
@@ -14,7 +10,7 @@ export const MessageInput: React.FC = () => {
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        signaling.sendMessage(createMessage(author, value));
+        sendMessage(value);
         setValue('');
     };
 
