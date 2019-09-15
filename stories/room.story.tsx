@@ -1,9 +1,9 @@
 import React, {useEffect} from 'react';
 import {storiesOf} from '@storybook/react';
-import {createMessage, Author, RTCChatMessage} from '../src/types';
+import {createMessage, Author, RTCChatMessage} from '../src/utils/types';
 import {useRoomState} from '../src/hooks/useRoomState';
 import {Room} from '../src/components/Room';
-import {User} from '../src/context';
+import {User} from '../src/utils/context';
 
 const author1: Author = {
     id: '1',

@@ -1,12 +1,12 @@
 import React, {useContext, useState} from 'react';
-import {RTCChatMessage, createMessage, createEdit, RoomState} from '../types';
+import {RTCChatMessage, createMessage, createEdit, RoomState} from '../utils/types';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
 import {Chat} from './Chat';
 import {Title} from './Title';
 import {Actions} from '../hooks/useRoomState';
-import {User} from '../context';
+import {User} from '../utils/context';
 
 const Div = styled.div`
     background-color: #ebebeb;

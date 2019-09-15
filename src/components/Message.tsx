@@ -1,6 +1,6 @@
 import React from 'react';
 import {EditMessage} from './EditMessage';
-import {RoomState, RTCChatMessage} from '../types';
+import {RoomState, RTCChatMessage} from '../utils/types';
 import styled from 'styled-components';
 
 const Article = styled.article`

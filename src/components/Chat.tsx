@@ -1,6 +1,6 @@
 import React from 'react';
 import {MessageInput} from './MessageInput';
-import {RoomState, RTCChatMessage} from '../types';
+import {RoomState, RTCChatMessage} from '../utils/types';
 import {Message} from './Message';
 import styled from 'styled-components';
 
@@ -24,7 +24,13 @@ export const Chat: React.FC<{
     return (
         <Div>
             {state.messages.map(message => (
-                <Message message={message} state={state} editMessage={editMessage} handleEdit={handleEdit} />
+                <Message
+                    key={message.id}
+                    message={message}
+                    state={state}
+                    editMessage={editMessage}
+                    handleEdit={handleEdit}
+                />
             ))}
             <MessageInput sendMessage={sendMessage} />
         </Div>

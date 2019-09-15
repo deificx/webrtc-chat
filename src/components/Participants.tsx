@@ -1,7 +1,6 @@
-import React, {useState, FormEvent} from 'react';
-import {Tab} from './Tab';
+import React from 'react';
 import styled from 'styled-components';
-import {Author} from '../types';
+import {Author} from '../utils/types';
 
 const Ul = styled.ul`
     background-color: #fff;

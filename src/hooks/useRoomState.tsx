@@ -1,5 +1,5 @@
 import {useReducer} from 'react';
-import {RTCChatMessage, RTCKeyMessage, RoomState} from '../types';
+import {RTCChatMessage, RTCKeyMessage, RoomState} from '../utils/types';
 import produce from 'immer';
 
 export type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string} | {key: 'clear:author'; id: string};

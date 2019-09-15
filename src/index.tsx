@@ -3,10 +3,10 @@ console.clear();
 import React, {useEffect, useRef, useState} from 'react';
 import {render} from 'react-dom';
 import {Room} from './components/Room';
-import {signaling} from './signaling';
-import {id, User} from './context';
+import {signaling} from './utils/signaling';
+import {id, User} from './utils/context';
 import {useRoomState} from './hooks/useRoomState';
-import {RTCChatMessage} from './types';
+import {RTCChatMessage} from './utils/types';
 
 const App: React.FC = () => {
     const [username, setUsername] = useState('');

@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {RTCChatMessage} from '../types';
+import {RTCChatMessage} from '../utils/types';
 import {Input} from './Input';
 
 export const EditMessage: React.FC<{
