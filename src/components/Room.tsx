@@ -1,13 +1,12 @@
-import React, {useEffect, useContext, useState} from 'react';
-import {signaling} from '../signaling';
-import {RTCChatMessage, createMessage, createEdit} from '../types';
-import {User} from './Login';
+import React, {useContext, useState} from 'react';
+import {RTCChatMessage, createMessage, createEdit, RoomState} from '../types';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
 import {Chat} from './Chat';
 import {Title} from './Title';
-import {useRoom} from '../hooks/useRoom';
+import {Actions} from '../hooks/useRoomState';
+import {User} from '../context';
 
 const Div = styled.div`
     background-color: #ebebeb;
@@ -18,15 +17,13 @@ const Div = styled.div`
     width: 360px;
 `;
 
-export const Room: React.FC = () => {
-    const [state, dispatch] = useRoom();
+export const Room: React.FC<{
+    dispatch: React.Dispatch<Actions>;
+    signalMessage: (message: RTCChatMessage) => void;
+    state: RoomState;
+}> = ({dispatch, signalMessage, state}) => {
     const [tab, setTab] = useState('chat');
     const author = useContext(User);
-
-    useEffect(() => {
-        signaling.addSubscriber(message => dispatch(message));
-        return;
-    }, []);
 
     const handleEdit = (id: string) => {
         if (state.messages.some(m => m.id === id && m.author.id === author.id)) {
@@ -39,12 +36,12 @@ export const Room: React.FC = () => {
     };
 
     const editMessage = (old: RTCChatMessage, message: string) => {
-        signaling.sendMessage(createEdit(old.author, old.id, message));
+        signalMessage(createEdit(old.author, old.id, message));
         dispatch({key: 'edit', id: ''});
     };
 
     const sendMessage = (message: string) => {
-        signaling.sendMessage(createMessage(author, message));
+        signalMessage(createMessage(author, message));
     };
 
     return (

@@ -1,8 +1,9 @@
 import React, {useEffect} from 'react';
 import {storiesOf} from '@storybook/react';
-import {Chat} from '../src/components/Chat';
-import {createMessage, Author, RTCChatMessage, createEdit} from '../src/types';
-import {useRoom} from '../src/hooks/useRoom';
+import {createMessage, Author, RTCChatMessage} from '../src/types';
+import {useRoomState} from '../src/hooks/useRoomState';
+import {Room} from '../src/components/Room';
+import {User} from '../src/context';
 
 const author1: Author = {
     id: '1',
@@ -22,28 +23,21 @@ const texts = [
     "Now that there is the Tec-9, a crappy spray gun from South Miami. This gun is advertised as the most popular gun in American crime. Do you believe that shit? It actually says that in the little book that comes with it: the most popular gun in American crime. Like they're actually proud of that shit. ",
 ];
 
-storiesOf('Chat', module).add('Populated', () => {
-    const [state, dispatch] = useRoom();
+storiesOf('Room', module).add('Populated', () => {
+    const [state, dispatch] = useRoomState();
     useEffect(() => {
         dispatch({key: 'rtc:public-key', author: author1, exportedPublicKey: {}});
         dispatch({key: 'rtc:public-key', author: author2, exportedPublicKey: {}});
         texts.forEach((text, index) => dispatch(createMessage(index % 2 === 0 ? author1 : author2, text)));
     }, []);
 
-    const handleEdit = (id: string) => {
-        if (state.messages.some(m => m.id === id && m.author.id === author1.id)) {
-            dispatch({key: 'edit', id});
-        }
+    const signalMessage = (message: RTCChatMessage) => {
+        dispatch(message);
     };
 
-    const editMessage = (old: RTCChatMessage, message: string) => {
-        dispatch(createEdit(old.author, old.id, message));
-        dispatch({key: 'edit', id: ''});
-    };
-
-    const sendMessage = (message: string) => {
-        dispatch(createMessage(author1, message));
-    };
-
-    return <Chat state={state} handleEdit={handleEdit} editMessage={editMessage} sendMessage={sendMessage} />;
+    return (
+        <User.Provider value={author1}>
+            <Room dispatch={dispatch} signalMessage={signalMessage} state={state} />
+        </User.Provider>
+    );
 });

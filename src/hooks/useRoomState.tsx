@@ -1,8 +1,8 @@
-import React, {useReducer} from 'react';
+import {useReducer} from 'react';
 import {RTCChatMessage, RTCKeyMessage, RoomState} from '../types';
 import produce from 'immer';
 
-type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string} | {key: 'clear:author'; id: string};
+export type Actions = RTCChatMessage | RTCKeyMessage | {key: 'edit'; id: string} | {key: 'clear:author'; id: string};
 
 const initialState: RoomState = {
     authors: [],
@@ -42,6 +42,6 @@ const reducer = (state: RoomState, action: Actions) =>
         }
     });
 
-export const useRoom = () => {
+export const useRoomState = () => {
     return useReducer(reducer, initialState);
 };
