@@ -53,6 +53,7 @@ export interface RTCChatMessage {
     message: string;
     signature?: string;
     timestamp: number;
+    type: 'text/plain' | 'text/image';
 }
 
 export interface RTCKeyMessage {
@@ -90,12 +91,17 @@ export const announceMessage = ({from, key}: AnnounceClient): string =>
         key,
     });
 
-export const createMessage = (author: Author, message: string): RTCChatMessage => ({
+export const createMessage = (
+    author: Author,
+    message: string,
+    type: 'text/plain' | 'text/image' = 'text/plain'
+): RTCChatMessage => ({
     author,
     edited: false,
     id: generateID(),
     message,
     timestamp: Date.now(),
+    type,
     key: 'rtc:chat',
 });
 
@@ -105,6 +111,7 @@ export const createEdit = (author: Author, id: string, message: string): RTCChat
     id,
     message,
     timestamp: Date.now(),
+    type: 'text/plain',
     key: 'rtc:chat',
 });
 

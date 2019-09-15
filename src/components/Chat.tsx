@@ -3,6 +3,7 @@ import {MessageInput} from './MessageInput';
 import {RoomState, RTCChatMessage} from '../utils/types';
 import {Message} from './Message';
 import styled from 'styled-components';
+import {File} from './File';
 
 const Div = styled.div`
     background-color: #fff;
@@ -19,7 +20,7 @@ export const Chat: React.FC<{
     state: RoomState;
     editMessage: (old: RTCChatMessage, message: string) => void;
     handleEdit: (id: string) => void;
-    sendMessage: (message: string) => void;
+    sendMessage: (message: string, type: 'text/plain' | 'text/image') => void;
 }> = ({state, editMessage, handleEdit, sendMessage}) => {
     return (
         <Div>
@@ -33,6 +34,7 @@ export const Chat: React.FC<{
                 />
             ))}
             <MessageInput sendMessage={sendMessage} />
+            <File sendMessage={sendMessage} />
         </Div>
     );
 };

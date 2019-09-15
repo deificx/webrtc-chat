@@ -40,8 +40,8 @@ export const Room: React.FC<{
         dispatch({key: 'edit', id: ''});
     };
 
-    const sendMessage = (message: string) => {
-        signalMessage(createMessage(author, message));
+    const sendMessage = (message: string, type: 'text/plain' | 'text/image' = 'text/plain') => {
+        signalMessage(createMessage(author, message, type));
     };
 
     return (

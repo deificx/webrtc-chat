@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
 import {Input} from './Input';
 
-export const MessageInput: React.FC<{sendMessage: (message: string) => void}> = ({sendMessage}) => {
+export const MessageInput: React.FC<{sendMessage: (message: string, type: 'text/plain' | 'text/image') => void}> = ({
+    sendMessage,
+}) => {
     const [value, setValue] = useState('');
 
     const handleChange = (event: React.FormEvent<HTMLInputElement>) => {
@@ -10,7 +12,7 @@ export const MessageInput: React.FC<{sendMessage: (message: string) => void}> = 
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        sendMessage(value);
+        sendMessage(value, 'text/plain');
         setValue('');
     };
 

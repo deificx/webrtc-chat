@@ -23,6 +23,10 @@ const Edit = styled.span`
     padding: 0 0.5em;
 `;
 
+const Img = styled.img`
+    max-width: 100%;
+`;
+
 export const Message: React.FC<{
     message: RTCChatMessage;
     state: RoomState;
@@ -37,7 +41,11 @@ export const Message: React.FC<{
                 {author ? <strong>{author.displayName}</strong> : <del>{message.author.displayName}</del>}
                 <Time dateTime={time.toISOString()}>{time.toLocaleString()}</Time>
             </header>
-            {message.edited && message.message === '' ? (
+            {message.type === 'text/image' ? (
+                <a href={message.message} target="_blank" rel="noopener noreferrer">
+                    <Img src={message.message} alt="" />
+                </a>
+            ) : message.edited && message.message === '' ? (
                 <del>message deleted</del>
             ) : state.editing === message.id ? (
                 <EditMessage message={message} editMessage={editMessage} />
