@@ -1,28 +1,10 @@
 import React, {Fragment} from 'react';
 import {Emoji, EmojiData, EmojiProps} from 'emoji-mart';
 
+const emoji = /(:[\w\d]+:(?=:):[\w\-]+:|:[\w\-]+:)/;
+
 export const MessageParser: React.FC<{message: string}> = ({message}) => {
-    const tokens: string[] = [];
-    let token = '';
-    let collecting = false;
-    for (let i = 0; i < message.length; i++) {
-        const symbol = message[i];
-        if (symbol === ':' && !collecting) {
-            collecting = true;
-            tokens.push(token);
-            token = ':';
-        } else if ((symbol === ' ' || i === message.length - 1) && collecting) {
-            if (symbol !== ' ') {
-                token += symbol;
-            }
-            tokens.push(token);
-            token = ' ';
-            collecting = false;
-        } else {
-            token += symbol;
-        }
-    }
-    tokens.push(token);
+    const tokens: string[] = message.split(emoji);
     return (
         <>
             {tokens.map((token, index) =>
