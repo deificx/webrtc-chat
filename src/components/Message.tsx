@@ -2,6 +2,7 @@ import React from 'react';
 import {EditMessage} from './EditMessage';
 import {RoomState, RTCChatMessage} from '../utils/types';
 import styled from 'styled-components';
+import {MessageParser} from './MessageParser';
 
 const Article = styled.article`
     padding: 0 25px 10px;
@@ -20,7 +21,7 @@ const Section = styled.section`
 const Edit = styled.span`
     color: grey;
     display: inline-block;
-    padding: 0 0.5em;
+    padding: 0.5em;
 `;
 
 const Img = styled.img`
@@ -51,7 +52,9 @@ export const Message: React.FC<{
                 <EditMessage message={message} editMessage={editMessage} />
             ) : (
                 <>
-                    <Section onDoubleClick={() => handleEdit(message.id)}>{message.message}</Section>
+                    <Section onDoubleClick={() => handleEdit(message.id)}>
+                        <MessageParser message={message.message} />
+                    </Section>
                     {message.edited && <Edit>(edited)</Edit>}
                 </>
             )}

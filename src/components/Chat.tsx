@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {MessageInput} from './MessageInput';
 import {RoomState, RTCChatMessage} from '../utils/types';
 import {Message} from './Message';
 import styled from 'styled-components';
 import {File} from './File';
+import {EmojiPicker} from './EmojiPicker';
+import {EmojiData} from 'emoji-mart';
 
 const Div = styled.div`
     background-color: #fff;
@@ -16,12 +18,22 @@ const Div = styled.div`
     width: 100%;
 `;
 
+const Controls = styled.div`
+    margin-left: 25px;
+`;
+
 export const Chat: React.FC<{
     state: RoomState;
     editMessage: (old: RTCChatMessage, message: string) => void;
     handleEdit: (id: string) => void;
     sendMessage: (message: string, type: 'text/plain' | 'text/image') => void;
 }> = ({state, editMessage, handleEdit, sendMessage}) => {
+    const [value, setValue] = useState('');
+
+    const onSelect = (emoji: EmojiData) => {
+        setValue([value.trim(), emoji.colons].join(' '));
+    };
+
     return (
         <Div>
             {state.messages.map(message => (
@@ -33,8 +45,11 @@ export const Chat: React.FC<{
                     handleEdit={handleEdit}
                 />
             ))}
-            <MessageInput sendMessage={sendMessage} />
-            <File sendMessage={sendMessage} />
+            <MessageInput sendMessage={sendMessage} setValue={setValue} value={value} />
+            <Controls>
+                <File sendMessage={sendMessage} />
+                <EmojiPicker onSelect={onSelect} />
+            </Controls>
         </Div>
     );
 };

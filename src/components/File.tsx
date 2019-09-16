@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import styled from 'styled-components';
+import {Emoji} from 'emoji-mart';
 
 const Modal = styled.div`
     background-color: rgba(255, 255, 255, 0.9);
@@ -33,8 +34,7 @@ const HiddenInput = styled.input`
 
 const Label = styled.label`
     cursor: pointer;
-    margin-left: 25px;
-    margin-bottom: 1em;
+    width: 32px;
 `;
 
 export const File: React.FC<{sendMessage: (image: string, type: 'text/plain' | 'text/image') => void}> = ({
@@ -100,7 +100,9 @@ export const File: React.FC<{sendMessage: (image: string, type: 'text/plain' | '
                 </Modal>
             )}
             <HiddenInput id="file-input" ref={fileRef} type="file" />
-            <Label htmlFor="file-input">🌄</Label>
+            <Label htmlFor="file-input">
+                <Emoji emoji=":file_folder:" set="messenger" size={24} />
+            </Label>
         </>
     );
 };
