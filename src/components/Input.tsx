@@ -3,7 +3,7 @@ import styled, {css} from 'styled-components';
 export const Input = styled.input<{inline?: boolean}>`
     border: 1px solid #000;
     border-radius: 4px;
-    padding: 15px 70px 15px 10px;
+    padding: 15px 10px;
     margin: 20px;
     width: 240px;
 
@@ -11,7 +11,6 @@ export const Input = styled.input<{inline?: boolean}>`
         props.inline &&
         css`
             margin: 0;
-            padding: 10px;
             width: 290px;
         `}
 `;
