@@ -19,7 +19,6 @@ const generateKeys = async () =>
         ['sign', 'verify']
     );
 
-// TODO: use indexedDB to store and retrieve keys
 export const getKeys = async (): Promise<CryptoKeyPair> => {
     const keyval = await getDB();
     const keyPair: CryptoKeyPair | undefined = await keyval.get('keys');

@@ -3,7 +3,6 @@ import {storiesOf} from '@storybook/react';
 import {createMessage, Author, RTCChatMessage} from '../src/utils/types';
 import {useRoomState} from '../src/hooks/useRoomState';
 import {Room} from '../src/components/Room';
-import {User} from '../src/utils/context';
 
 const author1: Author = {
     id: '1',
@@ -35,9 +34,5 @@ storiesOf('Room', module).add('Populated', () => {
         dispatch(message);
     };
 
-    return (
-        <User.Provider value={author1}>
-            <Room dispatch={dispatch} signalMessage={signalMessage} state={state} />
-        </User.Provider>
-    );
+    return <Room author={author1} dispatch={dispatch} signalMessage={signalMessage} state={state} />;
 });

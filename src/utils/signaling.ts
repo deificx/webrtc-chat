@@ -28,14 +28,14 @@ class Signaling {
 
     constructor() {
         this.setup = this.setup.bind(this);
-        this.addSubscriber = this.addSubscriber.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
     }
 
-    async setup(author: Author) {
+    async setup(author: Author, subscriberFn: SubscriberFn) {
         console.log('setting up signaling', author);
 
         this.author = author;
+        this.subscribers.push(subscriberFn);
 
         this.keys = await getKeys();
 
@@ -64,10 +64,6 @@ class Signaling {
         };
 
         this.ws.send(announceMessage({from: this.from, key: 'announce'}));
-    }
-
-    addSubscriber(fn: SubscriberFn) {
-        this.subscribers.push(fn);
     }
 
     async sendMessage(message: RTCChatMessage) {

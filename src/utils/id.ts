@@ -1,4 +1,3 @@
-import {createContext} from 'react';
 import {generateID} from './crypto';
 
 const getID = () => {
@@ -12,5 +11,3 @@ const getID = () => {
 };
 
 export const id = getID();
-
-export const User = createContext<{displayName: string; id: string}>({displayName: '', id});

@@ -4,7 +4,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {render} from 'react-dom';
 import {Room} from './components/Room';
 import {signaling} from './utils/signaling';
-import {id, User} from './utils/context';
+import {id} from './utils/id';
 import {useRoomState} from './hooks/useRoomState';
 import {RTCChatMessage} from './utils/types';
 
@@ -44,15 +44,17 @@ const App: React.FC = () => {
         if (!loggedIn || !username) {
             return;
         }
-        signaling.setup({displayName: username, id});
-        signaling.addSubscriber(message => dispatch(message));
+        signaling.setup({displayName: username, id}, message => dispatch(message));
     }, [loggedIn, username]);
 
     if (loggedIn) {
         return (
-            <User.Provider value={{displayName: username, id}}>
-                <Room dispatch={dispatch} signalMessage={signalMessage} state={state} />
-            </User.Provider>
+            <Room
+                author={{displayName: username, id}}
+                dispatch={dispatch}
+                signalMessage={signalMessage}
+                state={state}
+            />
         );
     }
 

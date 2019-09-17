@@ -1,12 +1,11 @@
 import React, {useContext, useState} from 'react';
-import {RTCChatMessage, createMessage, createEdit, RoomState} from '../utils/types';
+import {RTCChatMessage, createMessage, createEdit, RoomState, Author} from '../utils/types';
 import styled from 'styled-components';
 import {Tabs} from './Tabs';
 import {Participants} from './Participants';
 import {Chat} from './Chat';
 import {Title} from './Title';
 import {Actions} from '../hooks/useRoomState';
-import {User} from '../utils/context';
 
 const Div = styled.div`
     background-color: #ebebeb;
@@ -18,12 +17,12 @@ const Div = styled.div`
 `;
 
 export const Room: React.FC<{
+    author: Author;
     dispatch: React.Dispatch<Actions>;
     signalMessage: (message: RTCChatMessage) => void;
     state: RoomState;
-}> = ({dispatch, signalMessage, state}) => {
+}> = ({author, dispatch, signalMessage, state}) => {
     const [tab, setTab] = useState('chat');
-    const author = useContext(User);
 
     const handleEdit = (id: string) => {
         if (state.messages.some(m => m.id === id && m.author.id === author.id)) {
