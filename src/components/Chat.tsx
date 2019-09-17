@@ -15,11 +15,14 @@ const Div = styled.div`
     flex-direction: column;
     justify-content: flex-end;
     padding-top: 20px;
+    position: relative;
     width: 100%;
 `;
 
 const Controls = styled.div`
-    margin-left: 25px;
+    position: absolute;
+    right: 27px;
+    bottom: 27px;
 `;
 
 export const Chat: React.FC<{
