@@ -7290,6 +7290,13 @@ react-sizeme@^2.6.7:
     shallowequal "^1.1.0"
     throttle-debounce "^2.1.0"
 
+react-stay-scrolled@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/react-stay-scrolled/-/react-stay-scrolled-7.0.0.tgz#71b83b63f02c76e37e85f0c195fdcd7117251126"
+  integrity sha512-vxON5omwmJVe08QhoGGdNRZJq758Pi6GeBVMuiwzq4wmCjaO070w0YGTECyfjIo3/V5BKJjD8P1KSPAwX5apag==
+  dependencies:
+    tiny-invariant "^1.0.3"
+
 react-syntax-highlighter@^8.0.1:
   version "8.1.0"
   resolved "https://registry.yarnpkg.com/react-syntax-highlighter/-/react-syntax-highlighter-8.1.0.tgz#59103ff17a828a27ed7c8f035ae2558f09b6b78c"
@@ -8437,6 +8444,11 @@ tiny-emitter@^2.0.0:
 tiny-inflate@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/tiny-inflate/-/tiny-inflate-1.0.2.tgz#93d9decffc8805bd57eae4310f0b745e9b6fb3a7"
+
+tiny-invariant@^1.0.3:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/tiny-invariant/-/tiny-invariant-1.0.6.tgz#b3f9b38835e36a41c843a3b0907a5a7b3755de73"
+  integrity sha512-FOyLWWVjG+aC0UqG76V53yAWdXfH8bO6FNmyZOuUrzDzK8DI3/JRY25UD7+g49JWM1LXwymsKERB+DzI0dTEQA==
 
 tinycolor2@^1.4.1:
   version "1.4.1"

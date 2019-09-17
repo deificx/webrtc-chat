@@ -22,17 +22,31 @@ const texts = [
     "Now that there is the Tec-9, a crappy spray gun from South Miami. This gun is advertised as the most popular gun in American crime. Do you believe that shit? It actually says that in the little book that comes with it: the most popular gun in American crime. Like they're actually proud of that shit. ",
 ];
 
-storiesOf('Room', module).add('Populated', () => {
-    const [state, dispatch] = useRoomState();
-    useEffect(() => {
-        dispatch({key: 'rtc:public-key', author: author1, exportedPublicKey: {}});
-        dispatch({key: 'rtc:public-key', author: author2, exportedPublicKey: {}});
-        texts.forEach((text, index) => dispatch(createMessage(index % 2 === 0 ? author1 : author2, text)));
-    }, []);
+storiesOf('Room', module)
+    .add('With Messages', () => {
+        const [state, dispatch] = useRoomState();
+        useEffect(() => {
+            dispatch({key: 'rtc:public-key', author: author1, exportedPublicKey: {}});
+            dispatch({key: 'rtc:public-key', author: author2, exportedPublicKey: {}});
+            texts.forEach((text, index) => dispatch(createMessage(index % 2 === 0 ? author1 : author2, text)));
+        }, []);
 
-    const signalMessage = (message: RTCChatMessage) => {
-        dispatch(message);
-    };
+        const signalMessage = (message: RTCChatMessage) => {
+            dispatch(message);
+        };
 
-    return <Room author={author1} dispatch={dispatch} signalMessage={signalMessage} state={state} />;
-});
+        return <Room author={author1} dispatch={dispatch} signalMessage={signalMessage} state={state} />;
+    })
+    .add('Empty', () => {
+        const [state, dispatch] = useRoomState();
+        useEffect(() => {
+            dispatch({key: 'rtc:public-key', author: author1, exportedPublicKey: {}});
+            dispatch({key: 'rtc:public-key', author: author2, exportedPublicKey: {}});
+        }, []);
+
+        const signalMessage = (message: RTCChatMessage) => {
+            dispatch(message);
+        };
+
+        return <Room author={author1} dispatch={dispatch} signalMessage={signalMessage} state={state} />;
+    });

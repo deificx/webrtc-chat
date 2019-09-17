@@ -4,7 +4,6 @@ import styled from 'styled-components';
 
 const TabContainer = styled.div`
     display: flex;
-    flex-grow: 1;
     top: 0;
     right: 0;
     left: 0;
