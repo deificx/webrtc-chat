@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import 'emoji-mart/css/emoji-mart.css';
 import data from 'emoji-mart/data/messenger.json';
 import {Emoji, EmojiData, NimblePicker} from 'emoji-mart';
 import styled from 'styled-components';
