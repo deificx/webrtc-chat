@@ -34,6 +34,9 @@
         "ts-node-dev": "^1.0.0-pre.42",
         "typescript": "^3.6.2"
     },
+    "resolutions": {
+        "js-yaml": "^3.13.1"
+    },
     "prettier": {
         "bracketSpacing": false,
         "printWidth": 120,
