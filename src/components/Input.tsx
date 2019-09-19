@@ -5,7 +5,7 @@ export const Input = styled.input<{inline?: boolean}>`
     border-radius: 4px;
     padding: 15px 10px;
     margin: 20px;
-    width: 240px;
+    width: 300px;
 
     ${props =>
         props.inline &&
