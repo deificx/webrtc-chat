@@ -1,4 +1,3 @@
-import 'emoji-mart/css/emoji-mart.css';
 import React, {useState} from 'react';
 import {storiesOf} from '@storybook/react';
 import {EmojiPicker} from '../src/components/EmojiPicker';
