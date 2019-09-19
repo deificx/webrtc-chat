@@ -7,7 +7,6 @@
     "license": "UNLICENSED",
     "private": true,
     "dependencies": {
-        "emoji-mart": "^2.11.1",
         "idb": "^4.0.4",
         "immer": "^3.2.0",
         "node-turn": "^0.0.4",

@@ -2,7 +2,6 @@ import React from 'react';
 import {EditMessage} from './EditMessage';
 import {RoomState, RTCChatMessage} from '../utils/types';
 import styled from 'styled-components';
-import {MessageParser} from './MessageParser';
 
 const Article = styled.article`
     padding: 0 25px 10px;
@@ -42,19 +41,13 @@ export const Message: React.FC<{
                 {author ? <strong>{author.displayName}</strong> : <del>{message.author.displayName}</del>}
                 <Time dateTime={time.toISOString()}>{time.toLocaleString()}</Time>
             </header>
-            {message.type === 'text/image' ? (
-                <a href={message.message} target="_blank" rel="noopener noreferrer">
-                    <Img src={message.message} alt="" />
-                </a>
-            ) : message.edited && message.message === '' ? (
+            {message.edited && message.message === '' ? (
                 <del>message deleted</del>
             ) : state.editing === message.id ? (
                 <EditMessage message={message} editMessage={editMessage} />
             ) : (
                 <>
-                    <Section onDoubleClick={() => handleEdit(message.id)}>
-                        <MessageParser message={message.message} />
-                    </Section>
+                    <Section onDoubleClick={() => handleEdit(message.id)}>{message.message}</Section>
                     {message.edited && <Edit>(edited)</Edit>}
                 </>
             )}

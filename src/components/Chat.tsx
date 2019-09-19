@@ -1,11 +1,8 @@
-import React, {useState, useRef, useLayoutEffect, useEffect} from 'react';
+import React, {useState, useRef, useLayoutEffect} from 'react';
 import {MessageInput} from './MessageInput';
 import {RoomState, RTCChatMessage} from '../utils/types';
 import {Message} from './Message';
 import styled from 'styled-components';
-import {File} from './File';
-import {EmojiPicker} from './EmojiPicker';
-import {EmojiData} from 'emoji-mart';
 import useStayScrolled from 'react-stay-scrolled';
 
 const Div = styled.div`
@@ -33,15 +30,11 @@ export const Chat: React.FC<{
     state: RoomState;
     editMessage: (old: RTCChatMessage, message: string) => void;
     handleEdit: (id: string) => void;
-    sendMessage: (message: string, type: 'text/plain' | 'text/image') => void;
+    sendMessage: (message: string) => void;
 }> = ({state, editMessage, handleEdit, sendMessage}) => {
     const [value, setValue] = useState('');
     const messagesRef = useRef<HTMLDivElement>(null);
     const {stayScrolled} = useStayScrolled(messagesRef);
-
-    const onSelect = (emoji: EmojiData) => {
-        setValue([value.trim(), emoji.colons].join(' '));
-    };
 
     useLayoutEffect(() => {
         stayScrolled();
@@ -61,10 +54,6 @@ export const Chat: React.FC<{
                 ))}
             </Messages>
             <MessageInput sendMessage={sendMessage} setValue={setValue} value={value} />
-            <Controls>
-                <File sendMessage={sendMessage} />
-                <EmojiPicker onSelect={onSelect} />
-            </Controls>
         </Div>
     );
 };

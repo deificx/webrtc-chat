@@ -2,7 +2,7 @@ import React from 'react';
 import {Input} from './Input';
 
 export const MessageInput: React.FC<{
-    sendMessage: (message: string, type: 'text/plain' | 'text/image') => void;
+    sendMessage: (message: string) => void;
     setValue: React.Dispatch<React.SetStateAction<string>>;
     value: string;
 }> = ({sendMessage, setValue, value}) => {
@@ -12,7 +12,7 @@ export const MessageInput: React.FC<{
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        sendMessage(value, 'text/plain');
+        sendMessage(value);
         setValue('');
     };
 
