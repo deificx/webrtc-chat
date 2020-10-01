@@ -1,1 +1,1 @@
-declare module 'emoji-mart/data/messenger.json';
+declare module 'emoji-mart/data/facebook.json';

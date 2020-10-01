@@ -13,7 +13,7 @@ export const MessageParser: React.FC<{message: string}> = ({message}) => {
                         emoji={token}
                         fallback={(_emoji: EmojiData, props: EmojiProps) => props.emoji as any}
                         key={index}
-                        set="messenger"
+                        set="facebook"
                         size={16}
                     />
                 ) : (

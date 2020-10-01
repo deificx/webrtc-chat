@@ -1,6 +1,6 @@
 import TurnServer from 'node-turn';
 import WebSocket from 'ws';
-import uuidv4 from 'uuid/v4';
+import {v4} from 'uuid';
 import {Sdp, AnnounceClient, IceCandidate} from './src/utils/types';
 
 const turnServer = new TurnServer({
@@ -24,18 +24,18 @@ const getSocketById = (id: string) => {
     return idAndSocket[1];
 };
 
-websocketServer.on('connection', socket => {
-    const id = uuidv4();
+websocketServer.on('connection', (socket) => {
+    const id = v4();
     sockets.push([id, socket]);
 
     console.log(`new socket connection given id=${id}`);
 
-    socket.onclose = event => {
+    socket.onclose = (event) => {
         console.log('socket closed');
         console.log(event);
     };
 
-    socket.onmessage = event => {
+    socket.onmessage = (event) => {
         try {
             const message: AnnounceClient | Sdp | IceCandidate = JSON.parse(event.data.toString());
             console.log(
@@ -49,7 +49,7 @@ websocketServer.on('connection', socket => {
                     sockets
                         .filter(([clientId]) => clientId !== id)
                         .map(([_, clientSocket]) => clientSocket)
-                        .forEach(client => {
+                        .forEach((client) => {
                             if (client.readyState === WebSocket.OPEN) {
                                 client.send(JSON.stringify({from: id, key: 'announce'}));
                             }

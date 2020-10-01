@@ -101,7 +101,7 @@ export const File: React.FC<{sendMessage: (image: string, type: 'text/plain' | '
             )}
             <HiddenInput id="file-input" ref={fileRef} type="file" />
             <Label htmlFor="file-input">
-                <Emoji emoji=":file_folder:" set="messenger" size={24} />
+                <Emoji emoji=":file_folder:" set="facebook" size={24} />
             </Label>
         </>
     );

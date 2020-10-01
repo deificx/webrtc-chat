@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import 'emoji-mart/css/emoji-mart.css';
-import data from 'emoji-mart/data/messenger.json';
+import data from 'emoji-mart/data/facebook.json';
 import {Emoji, EmojiData, NimblePicker} from 'emoji-mart';
 import styled from 'styled-components';
 
@@ -51,13 +51,13 @@ export const EmojiPicker: React.FC<{
                         data={data}
                         emoji="grinning"
                         onSelect={handleSelect}
-                        set="messenger"
+                        set="facebook"
                         title="Select emoji"
                     />
                 </Modal>
             )}
             <Button onClick={handleClick}>
-                <Emoji emoji="grinning" set="messenger" size={24} />
+                <Emoji emoji="grinning" set="facebook" size={24} />
             </Button>
         </>
     );
